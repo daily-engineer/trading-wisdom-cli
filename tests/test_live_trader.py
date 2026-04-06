@@ -217,6 +217,16 @@ class TestRealTrader:
         with pytest.raises(RuntimeError, match="ib_insync is required"):
             trader.place_order("AAPL", OrderSide.BUY, 100, current_price=185.0)
 
+    def test_check_risk_disconnected(self, mock_ib):
+        mock_mod, ib = mock_ib
+        ib.isConnected.return_value = False
+
+        trader = RealTrader()
+        result = trader.check_risk()
+
+        assert not result.passed
+        assert any("not connected" in v.lower() for v in result.violations)
+
     def test_connection_failure_raises(self, monkeypatch):
         mock_mod = MagicMock()
         mock_mod.IB.return_value.connect.side_effect = OSError("Connection refused")

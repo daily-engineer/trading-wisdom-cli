@@ -10,7 +10,7 @@ from typing import Any, Optional
 from trading_cli.core.base_trader import BaseTrader
 from trading_cli.core.market import detect_market
 from trading_cli.core.order import Order, OrderSide, OrderStatus, OrderType
-from trading_cli.core.risk import RiskCheckResult, RiskEngine
+from trading_cli.core.risk import RiskCheckResult
 from trading_cli.core.trade_logger import TradeLogger
 
 
@@ -39,7 +39,6 @@ class RealTrader(BaseTrader):
         self._order_counter = 0
         self.logger = logger or TradeLogger()
         self._account_id = account_id
-        self._risk_engine = RiskEngine()
 
     # ------------------------------------------------------------------
     # Connection
@@ -75,6 +74,10 @@ class RealTrader(BaseTrader):
         from ib_insync import Stock
 
         mkt = detect_market(symbol.upper())
+        if mkt == "CN":
+            raise NotImplementedError(
+                f"CN A-share live trading via IBKR is not supported. Symbol: {symbol}"
+            )
         if mkt == "HK":
             return Stock(symbol.upper().replace(".HK", ""), "SEHK", "HKD")
         return Stock(symbol.upper().split(".")[0], "SMART", "USD")
@@ -159,7 +162,12 @@ class RealTrader(BaseTrader):
             ib.cancelOrder(trade.order)
             ib.sleep(1.0)
             return True
-        except Exception:
+        except Exception as e:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "cancel_order failed for %s: %s", order_id, e
+            )
             return False
 
     def close_position(self, symbol: str, current_price: float) -> Optional[Order]:
@@ -182,20 +190,27 @@ class RealTrader(BaseTrader):
         ib.reqGlobalCancel()
         ib.sleep(1.0)
 
-        # Step 2: close all positions
+        # Step 2: close all positions (continue even if one fails)
         for pos in ib.positions():
             qty = int(pos.position)
             if qty <= 0:
                 continue
             symbol = pos.contract.symbol
             price = prices.get(symbol, 0.0)
-            order = self.place_order(
-                symbol=symbol,
-                side=OrderSide.SELL,
-                quantity=qty,
-                current_price=price,
-            )
-            orders.append(order)
+            try:
+                order = self.place_order(
+                    symbol=symbol,
+                    side=OrderSide.SELL,
+                    quantity=qty,
+                    current_price=price,
+                )
+                orders.append(order)
+            except Exception as e:
+                import logging
+
+                logging.getLogger(__name__).error(
+                    "emergency_stop: failed to close %s: %s", symbol, e
+                )
 
         return orders
 
