@@ -35,7 +35,7 @@ class TradeLogger:
             "quantity": order.quantity,
             "order_type": order.order_type.value,
             "price": order.price,
-            "filled_price": order.filled_price if order.filled_price else None,
+            "filled_price": order.filled_price,
             "status": order.status.value,
             "order_id": order.id,
             "account_id_suffix": account_id[-4:] if account_id else "",
