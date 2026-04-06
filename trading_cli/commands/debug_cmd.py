@@ -79,7 +79,8 @@ def info():
 
     table.add_row("Python", sys.version.split()[0])
     table.add_row("Platform", platform.platform())
-    table.add_row("CLI Version", "0.1.0")
+    from trading_cli import __version__
+    table.add_row("CLI Version", __version__)
     table.add_row("Config Path", str(DEFAULT_CONFIG_FILE))
 
     # Directories

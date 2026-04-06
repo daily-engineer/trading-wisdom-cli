@@ -1,15 +1,18 @@
-# Trading Wisdom CLI
+# Trading Wisdom CLI v1.0
 
 An AI-powered, command-line driven trading framework supporting A-shares, Hong Kong stocks, US stocks, and options.
 
 ## Features
 
-- 📊 **Multi-Market Support**: A-shares, Hong Kong stocks, US stocks
-- 🤖 **AI-Driven Analysis**: LLM-based multi-agent analysis system
-- 💹 **Options Trading**: Full support for options analysis and trading
-- 🔄 **Complete Workflow**: From data → analysis → strategy → execution → monitoring
-- 🔧 **CLI-First Design**: Everything through command line, fully scriptable
-- 📈 **Professional Tools**: Backtesting, paper trading, risk management, reporting
+- **Multi-Market Support**: A-shares (Tushare), Hong Kong stocks, US stocks (IB API)
+- **Options Analysis**: Black-Scholes pricing, full Greeks, 6 strategy templates, payoff simulation
+- **Strategy Engine**: 4 built-in strategies + parameter optimizer (grid search & genetic algorithm)
+- **Backtesting**: Full backtest engine with P&L, Sharpe, drawdown, win rate metrics
+- **Paper Trading**: Simulated execution with risk management (position limits, stop loss, daily loss halt)
+- **Real-time Monitoring**: Multi-stock dashboard, technical indicator watch, price alerts
+- **Reporting**: Portfolio summary, performance reports, JSON/CSV export
+- **Workflow Orchestration**: YAML pipeline definitions for automated multi-step workflows
+- **Cross-Market**: Unified FX conversion, market comparison across CN/HK/US
 
 ## Quick Start
 
@@ -17,55 +20,124 @@ An AI-powered, command-line driven trading framework supporting A-shares, Hong K
 # Install
 poetry install
 
-# Basic usage
-trading-cli data fetch stock 000001.SZ
-trading-cli analyze stock AAPL --market US
-trading-cli strategy backtest my_strategy
+# Configure Tushare token (for A-shares data)
+trading-cli config set data.tushare.token YOUR_TOKEN
+
+# Fetch stock data
+trading-cli data fetch 000001.SZ
+trading-cli data fetch 600519 --days 60
+
+# Technical analysis
+trading-cli analyze signal 000001.SZ
+
+# Run backtest
+trading-cli backtest run ma_cross 000001.SZ --days 365
+trading-cli backtest compare 600519 --sort sharpe
+
+# Optimize strategy parameters
+trading-cli backtest optimize rsi 000001.SZ --method genetic
+
+# Paper trading
+trading-cli trade order buy 000001.SZ --qty 1000
+trading-cli trade account
+trading-cli trade risk
+
+# Options analysis
+trading-cli options chain 000001.SZ --price 11.12
+trading-cli options greeks --spot 450 --strike 460 --days 30 --type call
+trading-cli options strategy iron-condor --spot 450
+
+# Multi-market
+trading-cli market info US
+trading-cli market compare 000001.SZ AAPL 0700.HK --base-currency CNY
+
+# Monitoring
+trading-cli monitor dashboard 000001.SZ 600519.SH
+trading-cli monitor watch 000001.SZ 600519.SH 000858.SZ
 ```
 
-## Project Status
+## Command Reference
 
-🚀 **Under Active Development** - Following 16-week roadmap
+| Command | Description |
+|---------|-------------|
+| `data` | Fetch, validate, and manage market data |
+| `config` | Manage CLI settings |
+| `analyze` | Technical indicators and trading signals |
+| `strategy` | Create, list, and manage trading strategies |
+| `backtest` | Run backtests, compare strategies, optimize parameters |
+| `trade` | Paper trading with order and risk management |
+| `monitor` | Real-time dashboards, market watch, price alerts |
+| `report` | Portfolio and performance reports, export |
+| `options` | Options pricing, Greeks, chains, strategy analysis |
+| `market` | Multi-market info, FX rates, cross-market comparison |
+| `workflow` | YAML pipeline orchestration |
+| `debug` | Connectivity diagnostics and system info |
 
-- Phase 1 (Week 1-3): MVP Framework
-- Phase 2 (Week 4-7): Core Features
-- Phase 3 (Week 8-10): Options Support
-- Phase 4 (Week 11-12): International Markets
-- Phase 5 (Week 13-14): Live Trading Ready
-- Phase 6 (Week 15-16): Optimization & Release
+## Architecture
 
-## Documentation
+```
+┌─────────────────────────────────────┐
+│     CLI Layer (Click + Rich)        │
+│  12 command groups, 40+ subcommands │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│     Strategy & Analysis Layer       │
+│  4 strategies + optimizer + options  │
+│  Black-Scholes + Greeks + 6 spreads │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│     Execution Layer                 │
+│  Backtest engine + Paper trader     │
+│  Risk engine + Order management     │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│     Market Data Layer               │
+│  Tushare (A-shares) + IB (HK/US)   │
+│  Multi-market + FX rates            │
+└─────────────────────────────────────┘
+```
 
-See `/docs` for detailed documentation and `/workflows` for example workflows.
+## Docker
+
+```bash
+docker build -t trading-cli .
+docker run trading-cli data fetch 000001.SZ
+docker run trading-cli options greeks --spot 11 --strike 11 --days 30
+```
+
+## Development
+
+```bash
+# Install with dev dependencies
+poetry install
+
+# Run tests
+pytest tests/ -v
+
+# Format code
+black trading_cli/ tests/
+```
+
+## Project Stats
+
+| Metric | Value |
+|--------|-------|
+| Python Code | 7,500+ lines |
+| Test Cases | 161 |
+| Command Groups | 12 |
+| CLI Subcommands | 40+ |
+| Built-in Strategies | 4 |
+| Options Strategies | 6 |
+| Markets Supported | 3 (CN/HK/US) |
 
 ## License
 
 MIT
 
-## 🤝 贡献和反馈
+## Contributors
 
-我们欢迎任何反馈和建议！
-
-### 💬 如何提出反馈
-
-**最佳方式**：在 [Issues](https://github.com/daily-engineer/trading-wisdom-cli/issues) 中提出反馈
-
-- 📝 **文档改进**: 选择"文档反馈或建议"模板
-- 🏗️ **架构建议**: 在相关 Issue 中讨论
-- 🚀 **功能建议**: 创建新 Issue
-
-详见 [贡献指南](CONTRIBUTING.md) 和 [反馈指南](docs/FEEDBACK.md)。
-
-### 📋 反馈关键话题
-
-我们现在特别需要反馈：
-- ✅ 16周计划的合理性
-- ✅ 架构设计的完整性
-- ✅ CLI 命令的易用性
-- ✅ 技术选择的最优性
-
-### 👥 核心贡献者
-
-- Daily Engineer - 项目主导
-- sasa - 技术评审和建议
-
+- Daily Engineer - Project lead
+- Sasa - CFO / Architecture review

@@ -86,21 +86,23 @@
 
 **统计**: 161 tests | 12 命令组 | IB 模拟数据支持 10+ 港美股标的
 
-### Phase 5: 实盘交易 (Week 13-14)
-**目标**: 实盘交易就绪
+### Phase 5: 实盘交易就绪 (Week 13-14) — 延后
+**状态**: Paper Trading 已完成，实盘对接待 IB 账户就绪后启用
 
-- Week 13: 账户管理、实盘执行
-- Week 14: 安全审计、紧急停损、完整测试
+- 模拟交易引擎已在 Phase 2 Week 7 完成
+- IB 实盘模式代码已在 Phase 4 预埋（ib_provider.py live mode）
+- 需要真实 IB TWS/Gateway 环境进行验证
 
-**可交付物**: 可进行实盘交易
+### Phase 6: 优化发布 (Week 15-16) ✅ 完成
+**目标**: 代码质量和 v1.0 发布
 
-### Phase 6: 优化发布 (Week 15-16)
-**目标**: 代码质量和上线
+- [x] 代码质量检查：161 tests 全部通过
+- [x] 版本号更新：v0.1.0 → v1.0.0
+- [x] Docker 打包：Dockerfile 创建
+- [x] README 完善：完整命令参考、架构图、Quick Start
+- [x] GitHub Release: v1.0.0 创建
 
-- 性能优化
-- 代码质量检查
-- Docker部署
-- v1.0正式发布
+**v1.0.0 正式发布！**
 
 ---
 
