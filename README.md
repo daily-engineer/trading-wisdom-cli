@@ -1,143 +1,144 @@
-# Trading Wisdom CLI v1.0
+# Trading Wisdom CLI
 
-An AI-powered, command-line driven trading framework supporting A-shares, Hong Kong stocks, US stocks, and options.
+AI-powered trading framework for A-shares, Hong Kong stocks, US stocks, and options — all from your terminal.
 
 ## Features
 
-- **Multi-Market Support**: A-shares (Tushare), Hong Kong stocks, US stocks (IB API)
-- **Options Analysis**: Black-Scholes pricing, full Greeks, 6 strategy templates, payoff simulation
-- **Strategy Engine**: 4 built-in strategies + parameter optimizer (grid search & genetic algorithm)
-- **Backtesting**: Full backtest engine with P&L, Sharpe, drawdown, win rate metrics
-- **Paper Trading**: Simulated execution with risk management (position limits, stop loss, daily loss halt)
-- **Real-time Monitoring**: Multi-stock dashboard, technical indicator watch, price alerts
-- **Reporting**: Portfolio summary, performance reports, JSON/CSV export
-- **Workflow Orchestration**: YAML pipeline definitions for automated multi-step workflows
-- **Cross-Market**: Unified FX conversion, market comparison across CN/HK/US
+- 12 command groups covering the full trading workflow
+- Paper trading with built-in risk management
+- Live trading via Interactive Brokers (IBKR) with emergency stop
+- Multi-market support: A-shares (CN), Hong Kong (HK), US equities
+- Options pricing with Black-Scholes, full Greeks, and strategy analysis
+- Strategy backtesting with P&L, Sharpe ratio, and drawdown metrics
+- Technical analysis: MA Cross, RSI, MACD, Bollinger Bands
+- Strategy optimizer: grid search and genetic algorithms
+- Workflow YAML pipelines for automated trading sequences
+- JSON Lines audit log for all trade activity
 
 ## Quick Start
 
 ```bash
-# Install
-poetry install
-
-# Configure Tushare token (for A-shares data)
-trading-cli config set data.tushare.token YOUR_TOKEN
-
-# Fetch stock data
-trading-cli data fetch 000001.SZ
-trading-cli data fetch 600519 --days 60
-
-# Technical analysis
-trading-cli analyze signal 000001.SZ
-
-# Run backtest
-trading-cli backtest run ma_cross 000001.SZ --days 365
-trading-cli backtest compare 600519 --sort sharpe
-
-# Optimize strategy parameters
-trading-cli backtest optimize rsi 000001.SZ --method genetic
-
-# Paper trading
-trading-cli trade order buy 000001.SZ --qty 1000
-trading-cli trade account
-trading-cli trade risk
-
-# Options analysis
-trading-cli options chain 000001.SZ --price 11.12
-trading-cli options greeks --spot 450 --strike 460 --days 30 --type call
-trading-cli options strategy iron-condor --spot 450
-
-# Multi-market
-trading-cli market info US
-trading-cli market compare 000001.SZ AAPL 0700.HK --base-currency CNY
-
-# Monitoring
-trading-cli monitor dashboard 000001.SZ 600519.SH
-trading-cli monitor watch 000001.SZ 600519.SH 000858.SZ
+pip install trading-wisdom-cli
+trading-cli --help
 ```
-
-## Command Reference
-
-| Command | Description |
-|---------|-------------|
-| `data` | Fetch, validate, and manage market data |
-| `config` | Manage CLI settings |
-| `analyze` | Technical indicators and trading signals |
-| `strategy` | Create, list, and manage trading strategies |
-| `backtest` | Run backtests, compare strategies, optimize parameters |
-| `trade` | Paper trading with order and risk management |
-| `monitor` | Real-time dashboards, market watch, price alerts |
-| `report` | Portfolio and performance reports, export |
-| `options` | Options pricing, Greeks, chains, strategy analysis |
-| `market` | Multi-market info, FX rates, cross-market comparison |
-| `workflow` | YAML pipeline orchestration |
-| `debug` | Connectivity diagnostics and system info |
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│     CLI Layer (Click + Rich)        │
-│  12 command groups, 40+ subcommands │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│     Strategy & Analysis Layer       │
-│  4 strategies + optimizer + options  │
-│  Black-Scholes + Greeks + 6 spreads │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│     Execution Layer                 │
-│  Backtest engine + Paper trader     │
-│  Risk engine + Order management     │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│     Market Data Layer               │
-│  Tushare (A-shares) + IB (HK/US)   │
-│  Multi-market + FX rates            │
-└─────────────────────────────────────┘
+CLI Entry (trading-cli)
+├── data          — Market data (Tushare/IB)
+├── analyze       — Technical indicators
+├── strategy      — MA/RSI/MACD/Bollinger
+├── backtest      — Strategy backtesting
+├── options       — Black-Scholes, Greeks
+├── market        — Multi-market info (CN/HK/US)
+├── trade         — Paper + live trading
+├── monitor       — Price alerts
+├── report        — Portfolio reporting
+├── workflow      — YAML pipelines
+├── config        — Configuration
+└── debug         — Diagnostics
 ```
 
-## Docker
+## Command Examples
 
 ```bash
-docker build -t trading-cli .
-docker run trading-cli data fetch 000001.SZ
-docker run trading-cli options greeks --spot 11 --strike 11 --days 30
+# Fetch 60 days of data for Ping An Bank (A-share)
+trading-cli data fetch 000001.SZ --days 60
+
+# Fetch US stock data
+trading-cli data fetch AAPL --market US
+
+# Run technical analysis signals
+trading-cli analyze signal 000001.SZ
+
+# Run a backtest with MA Cross strategy
+trading-cli backtest run ma_cross 000001.SZ
+
+# Compare all strategies on a symbol, sorted by Sharpe
+trading-cli backtest compare 000001.SZ --sort sharpe
+
+# Optimize strategy parameters using genetic algorithm
+trading-cli backtest optimize ma_cross 600519 --method genetic
+
+# View options chain (9 strikes, 30 DTE)
+trading-cli options chain AAPL --price 185.00
+
+# Calculate options Greeks
+trading-cli options greeks AAPL --price 185.00 --strike 190 --expiry 2026-05-16
+
+# Paper trade: buy 1000 shares
+trading-cli trade order buy 000001.SZ --qty 1000
+
+# View account summary
+trading-cli trade account
+
+# Live trade via IBKR
+trading-cli trade order buy AAPL --qty 100 --live
+
+# Close a position at market price
+trading-cli trade position close 000001.SZ
+
+# Run portfolio risk check
+trading-cli trade risk
+
+# Emergency stop: cancel all orders and close all positions immediately
+trading-cli trade emergency stop
+
+# Show multi-market info
+trading-cli market info AAPL --market US
+
+# Show FX rate
+trading-cli market fx USD CNY
+
+# Show current configuration
+trading-cli config show
+```
+
+## Live Trading (IBKR)
+
+```bash
+pip install trading-wisdom-cli[ib]
+export IB_HOST=127.0.0.1
+export IB_PORT=7497
+trading-cli trade order buy AAPL --qty 100 --live
+```
+
+IB Gateway or Trader Workstation (TWS) must be running and accepting API connections on the configured host and port.
+
+Emergency stop (paper mode — safe simulation):
+
+```bash
+trading-cli trade emergency stop
+```
+
+Emergency stop (live mode — acts immediately, no confirmation prompt):
+
+```bash
+trading-cli trade emergency stop --live
+```
+
+## Configuration
+
+`~/.trading-cli/config.yaml` is auto-created on first run with sensible defaults. You can view and update it with:
+
+```bash
+trading-cli config show
+trading-cli config set data.default_provider tushare
+trading-cli config validate
 ```
 
 ## Development
 
 ```bash
-# Install with dev dependencies
-poetry install
-
-# Run tests
-pytest tests/ -v
-
-# Format code
-black trading_cli/ tests/
+git clone https://github.com/daily-engineer/trading-wisdom-cli.git
+cd trading-wisdom-cli
+pip install -e ".[ib]"
+python -m pytest tests/ -q
+python -m black trading_cli/
+mypy trading_cli/ --ignore-missing-imports
 ```
-
-## Project Stats
-
-| Metric | Value |
-|--------|-------|
-| Python Code | 7,500+ lines |
-| Test Cases | 161 |
-| Command Groups | 12 |
-| CLI Subcommands | 40+ |
-| Built-in Strategies | 4 |
-| Options Strategies | 6 |
-| Markets Supported | 3 (CN/HK/US) |
 
 ## License
 
 MIT
-
-## Contributors
-
-- Daily Engineer - Project lead
-- Sasa - CFO / Architecture review
