@@ -23,9 +23,6 @@ requests = "^2.31.0"
 [tool.poetry.group.ib.dependencies]
 ib_insync = {version = "^0.9.86", optional = true}
 
-[tool.poetry.group.ib.dependencies]
-ib_insync = {version = "^0.9.86", optional = true}
-
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
 black = "^23.0"
