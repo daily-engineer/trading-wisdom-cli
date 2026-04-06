@@ -2,19 +2,32 @@
 
 ## 16周项目计划
 
-### Phase 1: MVP框架搭建 (Week 1-3) ✅ 进行中
+### Phase 1: MVP框架搭建 (Week 1-3) ✅ 完成
 **目标**: 完成基础框架和初始功能
 
 - Week 1: 项目初始化、CLI框架、配置系统 ✅
 - Week 2: 数据层（Tushare集成）✅
-- Week 3: 分析层基础（技术分析、LLM集成）🔄 **本周完成**
-  - [x] 技术指标计算模块
-  - [x] analyze indicators 命令
-  - [x] analyze signal 命令
-  - [x] analyze summary 命令
-  - [ ] LLM 集成（规划中）
+- Week 3: 分析层基础（技术分析）✅
 
 **可交付物**: 基础CLI + 数据源 + 技术分析 ✅
+
+### Phase 2: 核心功能 (Week 4-7) ✅ 进行中
+**目标**: 完整的交易流程闭环
+
+- Week 4: 策略框架 ✅
+  - [x] 策略定义模型
+  - [x] 策略注册表
+  - [x] 4个内置策略 (MA Cross, RSI, MACD, Bollinger)
+  - [x] strategy 命令组
+
+- Week 5: 回测引擎 🔄 **本周完成**
+  - [x] 回测框架
+  - [x] 信号生成和执行
+  - [x] 性能计算 (P&L, Win Rate, Max Drawdown, Sharpe)
+  - [x] backtest 命令组
+  - [x] 策略比较功能
+
+**可交付物**: 策略创建 → 回测验证 → 性能分析 ✅
 
 ### Phase 2: 核心功能 (Week 4-7)
 **目标**: 完整的 9 个命令群组

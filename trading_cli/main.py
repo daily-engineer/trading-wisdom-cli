@@ -10,6 +10,8 @@ import click
 from trading_cli.commands.data_cmd import data
 from trading_cli.commands.config_cmd import config
 from trading_cli.commands.analyze_cmd import analyze
+from trading_cli.commands.strategy_cmd import strategy
+from trading_cli.commands.backtest_cmd import backtest
 
 
 @click.group()
@@ -42,15 +44,11 @@ def cli(ctx):
 cli.add_command(data)
 cli.add_command(config)
 cli.add_command(analyze)
+cli.add_command(strategy)
+cli.add_command(backtest)
 
 
 # Placeholder command groups (to be implemented in later phases)
-
-
-@cli.group()
-def strategy():
-    """📈 Strategy Management (Phase 2)"""
-    pass
 
 
 @cli.group()

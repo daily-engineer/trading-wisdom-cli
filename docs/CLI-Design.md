@@ -52,13 +52,35 @@ trading-cli analyze summary 000001.SZ              # 快速技术摘要
 - 布林带位置
 - 随机指标
 
-### strategy - 策略管理
+### strategy - 策略管理 ✅ 已实现 (Phase 2 Week 4)
 ```bash
-trading-cli strategy create my_strategy
-trading-cli strategy backtest my_strategy --symbol 000001.SZ
-trading-cli strategy optimize my_strategy --params "period=[20,50]"
-trading-cli strategy deploy my_strategy --account live
+trading-cli strategy list                           # 列出所有策略
+trading-cli strategy show ma_cross                   # 查看策略详情
+trading-cli strategy create ma_cross                 # 注册内置策略
+trading-cli strategy create my_strategy             # 创建自定义策略
+trading-cli strategy delete my_strategy             # 删除自定义策略
 ```
+
+**内置策略:**
+- `ma_cross` - 移动平均线交叉策略
+- `rsi` - RSI均值回归策略
+- `macd` - MACD策略
+- `bollinger` - 布林带策略
+
+### backtest - 回测系统 ✅ 已实现 (Phase 2 Week 5)
+```bash
+trading-cli backtest run ma_cross 000001.SZ         # 运行回测
+trading-cli backtest run rsi 600519 --capital 50000 # 指定资金
+trading-cli backtest run bollinger 000001.SZ --params '{"period": 30}'
+trading-cli backtest compare 000001.SZ              # 比较所有策略
+trading-cli backtest history                         # 查看回测历史
+```
+
+**回测指标:**
+- 总收益/收益率
+- 交易次数/胜率
+- 最大回撤
+- 夏普比率
 
 ### trade - 交易执行
 ```bash
