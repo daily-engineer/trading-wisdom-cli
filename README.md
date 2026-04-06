@@ -41,3 +41,31 @@ See `/docs` for detailed documentation and `/workflows` for example workflows.
 ## License
 
 MIT
+
+## 🤝 贡献和反馈
+
+我们欢迎任何反馈和建议！
+
+### 💬 如何提出反馈
+
+**最佳方式**：在 [Issues](https://github.com/daily-engineer/trading-wisdom-cli/issues) 中提出反馈
+
+- 📝 **文档改进**: 选择"文档反馈或建议"模板
+- 🏗️ **架构建议**: 在相关 Issue 中讨论
+- 🚀 **功能建议**: 创建新 Issue
+
+详见 [贡献指南](CONTRIBUTING.md) 和 [反馈指南](docs/FEEDBACK.md)。
+
+### 📋 反馈关键话题
+
+我们现在特别需要反馈：
+- ✅ 16周计划的合理性
+- ✅ 架构设计的完整性
+- ✅ CLI 命令的易用性
+- ✅ 技术选择的最优性
+
+### 👥 核心贡献者
+
+- Daily Engineer - 项目主导
+- sasa - 技术评审和建议
+
