@@ -226,7 +226,7 @@ class BollingerStrategy(Strategy):
         
         # Near lower band - potential buy
         if position < 0.2:
-            strength = (0.2 - position) / 0.2
+            strength = min((0.2 - position) / 0.2, 1.0)
             return Signal(
                 symbol=symbol,
                 signal_type=SignalType.BUY,
@@ -239,7 +239,7 @@ class BollingerStrategy(Strategy):
         
         # Near upper band - potential sell
         if position > 0.8:
-            strength = (position - 0.8) / 0.2
+            strength = min((position - 0.8) / 0.2, 1.0)
             return Signal(
                 symbol=symbol,
                 signal_type=SignalType.SELL,

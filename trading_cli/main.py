@@ -12,6 +12,8 @@ from trading_cli.commands.config_cmd import config
 from trading_cli.commands.analyze_cmd import analyze
 from trading_cli.commands.strategy_cmd import strategy
 from trading_cli.commands.backtest_cmd import backtest
+from trading_cli.commands.monitor_cmd import monitor
+from trading_cli.commands.report_cmd import report
 
 
 @click.group()
@@ -46,6 +48,8 @@ cli.add_command(config)
 cli.add_command(analyze)
 cli.add_command(strategy)
 cli.add_command(backtest)
+cli.add_command(monitor)
+cli.add_command(report)
 
 
 # Placeholder command groups (to be implemented in later phases)
@@ -58,20 +62,8 @@ def trade():
 
 
 @cli.group()
-def monitor():
-    """👁️  Real-time Monitoring (Phase 2)"""
-    pass
-
-
-@cli.group()
 def workflow():
     """🔄 Workflow Orchestration (Phase 2)"""
-    pass
-
-
-@cli.group()
-def report():
-    """📋 Reporting (Phase 2)"""
     pass
 
 
