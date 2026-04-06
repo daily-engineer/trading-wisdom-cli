@@ -131,8 +131,13 @@ def watch(symbols: tuple[str, ...], days: int):
             )
             try:
                 result = dp.fetch_stock_daily(request)
-            except Exception:
-                table.add_row(sym, "[red]Error[/red]", "-", "-", "-", "-", "-", "-")
+            except Exception as e:
+                msg = str(e)
+                if "token" in msg.lower() or "Token" in msg or "api" in msg.lower():
+                    label = "[yellow]需要 Token[/yellow]"
+                else:
+                    label = "[yellow]无数据[/yellow]"
+                table.add_row(sym, label, "-", "-", "-", "-", "-", "-")
                 continue
 
         if result.is_empty or len(result.data) < 20:

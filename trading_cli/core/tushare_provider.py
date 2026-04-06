@@ -32,6 +32,11 @@ class TushareProvider:
 
     def fetch_stock_daily(self, request: DataFetchRequest) -> DataFetchResult:
         """Fetch daily stock data from Tushare Pro API."""
+        if not self._config.token:
+            raise RuntimeError(
+                "Tushare Token 未配置。"
+                "请运行: trading-cli config set data.tushare.token <YOUR_TOKEN>"
+            )
         start = request.start_date or (date.today() - timedelta(days=365))
         end = request.end_date or date.today()
 
@@ -55,9 +60,13 @@ class TushareProvider:
         result = resp.json()
 
         if result.get("code") != 0:
-            raise RuntimeError(
-                f"Tushare API error: {result.get('msg', 'unknown error')}"
-            )
+            msg = result.get("msg", "unknown error")
+            if not self._config.token or "token" in msg.lower() or "Token" in msg:
+                raise RuntimeError(
+                    "Tushare Token 未配置或无效。"
+                    "请运行: trading-cli config set data.tushare.token <YOUR_TOKEN>"
+                )
+            raise RuntimeError(f"Tushare API 错误: {msg}")
 
         fields = result["data"]["fields"]
         items = result["data"]["items"] or []

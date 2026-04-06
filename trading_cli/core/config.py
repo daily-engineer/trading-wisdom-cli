@@ -71,5 +71,10 @@ class AppConfig(BaseModel):
 
 
 def get_config(path: Optional[Path] = None) -> AppConfig:
-    """Get application configuration (convenience function)."""
-    return AppConfig.load(path)
+    """Get application configuration, writing defaults to disk on first run."""
+    config_path = path or DEFAULT_CONFIG_FILE
+    if not config_path.exists():
+        cfg = AppConfig()
+        cfg.save(config_path)
+        return cfg
+    return AppConfig.load(config_path)

@@ -65,7 +65,12 @@ def backtest():
     "--capital", type=float, default=100000, help="Initial capital (default: 100,000)"
 )
 @click.option(
-    "--days", "-d", type=int, default=365, help="Backtest period in days (default: 365)"
+    "--days",
+    "--period",
+    "-d",
+    type=int,
+    default=365,
+    help="Backtest period in days (default: 365)",
 )
 @click.option("--params", "-p", help="Strategy parameters as JSON string")
 def run(strategy_name: str, symbol: str, capital: float, days: int, params: str | None):
