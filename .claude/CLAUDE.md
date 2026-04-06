@@ -42,15 +42,20 @@ AI-powered trading CLI framework supporting A-shares (CN), Hong Kong stocks (HK)
 - 20 unit tests for live trader + security audit passed
 - Install with live trading: `pip install trading-wisdom-cli[ib]`
 
-### Phase 6: Release (Week 15-16)
-- Performance tuning, Docker, v1.0
+### Phase 6: Release ✅ (Week 15-16)
+- E2E integration tests (3 scenarios, 21 tests) — `tests/test_e2e_pipeline.py`
+- Security audit report — `docs/security-audit-2026-04-06.md`
+- Docker multi-stage build — `Dockerfile`, `docker-compose.yml`, `docs/docker-deployment.md`
+- Full documentation — `README.md`, `INSTALL.md`, `QUICKSTART.md`, `CHANGELOG.md`
+- `python -m build` produces `trading_wisdom_cli-1.0.0.tar.gz` + `.whl`
 
 ---
 
 ## Current Stats
-- **181 tests**, all passing (`python -m pytest tests/ -q`)
+- **202 tests**, all passing (`python -m pytest tests/ -q`)
 - **12 command groups**, 30+ CLI subcommands
 - **39 source files**, black + mypy clean
+- **Version:** 1.0.0 (`trading-cli --version`)
 
 ## Code Quality
 - Formatter: `black` (run: `python -m black trading_cli/`)
@@ -61,8 +66,8 @@ AI-powered trading CLI framework supporting A-shares (CN), Hong Kong stocks (HK)
 
 ## Key Design Decisions
 - Data providers: Tushare (CN), IB (HK/US, simulation supported)
-- Backtest: custom engine in `trading_cli/backtest/engine.py`; vectorbt/backtrader planned for Phase 5
-- Live trading: vnpy (veighna) planned for Phase 5
+- Backtest: custom engine in `trading_cli/backtest/engine.py`
+- Live trading: IBKR via ib_insync (`pip install .[ib]`); CN A-shares raise NotImplementedError
 - Config file: `~/.trading-cli/config.yaml` (auto-created with defaults)
 - All float comparisons in tests must use `pytest.approx`
 
