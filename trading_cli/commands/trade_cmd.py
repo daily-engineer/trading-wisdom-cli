@@ -123,10 +123,14 @@ def order_buy(
             return
 
     trader = _get_trader(live)
-    current_price = price or _fetch_price(symbol)
-    if current_price is None:
-        console.print(f"[red]Cannot determine price for {symbol}.[/red]")
-        return
+    # Fetch price after confirmation; live market orders don't require a local price
+    if not live or price is not None:
+        current_price = price or _fetch_price(symbol)
+        if current_price is None:
+            console.print(f"[red]Cannot determine price for {symbol}.[/red]")
+            return
+    else:
+        current_price = None
 
     order_type = OrderType.LIMIT if price else OrderType.MARKET
     result = trader.place_order(
@@ -184,10 +188,6 @@ def order_sell(
         trading-cli trade order sell AAPL --live --yes
     """
     trader = _get_trader(live)
-    current_price = price or _fetch_price(symbol)
-    if current_price is None:
-        console.print(f"[red]Cannot determine price for {symbol}.[/red]")
-        return
 
     # Default: close entire position (paper mode only)
     if qty == 0 and not live:
@@ -197,11 +197,23 @@ def order_sell(
             console.print(f"[yellow]No position in {symbol} to sell.[/yellow]")
             return
         qty = pos.quantity
+    elif qty == 0 and live:
+        console.print(f"[red]--qty is required for live sell orders.[/red]")
+        return
 
     if live and not skip_confirm:
         if not _confirm_live(symbol, "SELL", qty, price):
             console.print("[yellow]Cancelled.[/yellow]")
             return
+
+    # Fetch price after confirmation; live market orders don't require a local price
+    if not live or price is not None:
+        current_price = price or _fetch_price(symbol)
+        if current_price is None:
+            console.print(f"[red]Cannot determine price for {symbol}.[/red]")
+            return
+    else:
+        current_price = None
 
     result = trader.place_order(
         symbol=symbol,
@@ -222,6 +234,10 @@ def order_sell(
         )
     elif result.status.value == "REJECTED":
         console.print(f"[red]✗ REJECTED:[/red] {result.message}")
+    else:
+        console.print(
+            f"[yellow]⏳ {result.status.value}[/yellow] Order {result.id} placed."
+        )
 
 
 @order.command("list")
@@ -358,7 +374,13 @@ def position_close(symbol: str, live: bool, skip_confirm: bool):
     result = trader.close_position(symbol, current_price)
     if result is None:
         console.print(f"[yellow]No position in {symbol}.[/yellow]")
-    elif result.status.value == "FILLED":
+        return
+
+    mode = "live" if live else "paper"
+    if not live:
+        _logger.log(result, mode=mode)
+
+    if result.status.value == "FILLED":
         console.print(
             f"[green]✓ Position closed[/green] {symbol} × {result.filled_quantity} @ ${result.filled_price:.2f}"
         )

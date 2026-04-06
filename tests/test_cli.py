@@ -66,23 +66,45 @@ def test_data_sources():
     assert "tushare" in result.output
 
 
+@pytest.fixture
+def cli_runner():
+    return CliRunner()
+
+
 def test_emergency_stop_paper(cli_runner):
-    """Emergency stop in paper mode outputs a result message."""
+    """Emergency stop in paper mode with empty account reports no positions."""
     result = cli_runner.invoke(cli, ["trade", "emergency", "stop"])
+    assert result.exception is None
     assert result.exit_code == 0
-    # Either "No open positions" (empty account) or shows results table
-    assert "No open positions" in result.output or "Emergency" in result.output
+    assert "No open positions to close" in result.output
 
 
 def test_order_buy_live_requires_confirm(cli_runner):
-    """--live flag without --yes should show the LIVE ORDER warning prompt."""
+    """--live flag without --yes should show warning and cancel on 'n'."""
     result = cli_runner.invoke(
         cli, ["trade", "order", "buy", "AAPL", "--qty", "1", "--live"], input="n\n"
     )
     assert result.exit_code == 0
     assert "LIVE ORDER" in result.output
+    assert "Cancelled" in result.output
 
 
-@pytest.fixture
-def cli_runner():
-    return CliRunner()
+def test_order_sell_live_requires_confirm(cli_runner):
+    """--live sell without --yes should show warning and cancel on 'n'."""
+    result = cli_runner.invoke(
+        cli,
+        ["trade", "order", "sell", "AAPL", "--qty", "10", "--live"],
+        input="n\n",
+    )
+    assert result.exit_code == 0
+    assert "LIVE ORDER" in result.output
+    assert "Cancelled" in result.output
+
+
+def test_order_buy_live_yes_skips_confirm(cli_runner):
+    """--live --yes should skip the confirmation prompt."""
+    result = cli_runner.invoke(
+        cli, ["trade", "order", "buy", "AAPL", "--qty", "1", "--live", "--yes"]
+    )
+    # Will fail to fetch price (no real data source in tests), but no confirmation prompt
+    assert "Confirm?" not in result.output
