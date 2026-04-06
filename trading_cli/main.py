@@ -18,6 +18,7 @@ from trading_cli.commands.trade_cmd import trade
 from trading_cli.commands.workflow_cmd import workflow
 from trading_cli.commands.debug_cmd import debug
 from trading_cli.commands.options_cmd import options
+from trading_cli.commands.market_cmd import market
 
 
 @click.group()
@@ -58,6 +59,7 @@ cli.add_command(trade)
 cli.add_command(workflow)
 cli.add_command(debug)
 cli.add_command(options)
+cli.add_command(market)
 
 
 if __name__ == "__main__":

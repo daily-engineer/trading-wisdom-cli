@@ -236,3 +236,91 @@ def payoff(spot: float, strike: float, premium: float, opt_type: str, side: str,
         be = strike - premium if side == "long" else strike - premium
     console.print(f"\n  Break-even: [bold]{be:.2f}[/bold] | Max loss: {premium * abs(multiplier):.4f}")
     console.print()
+
+
+@options.command("strategy")
+@click.argument("strategy_name", type=click.Choice(
+    ["covered-call", "protective-put", "bull-spread", "bear-spread", "iron-condor", "straddle"]))
+@click.option("--spot", "-s", type=float, required=True, help="Underlying price.")
+@click.option("--vol", "-v", type=float, default=0.25, help="Volatility.")
+@click.option("--days", "-d", type=int, default=30, help="Days to expiry.")
+@click.option("--rate", "-r", type=float, default=0.03, help="Risk-free rate.")
+def options_strategy(strategy_name: str, spot: float, vol: float, days: int, rate: float):
+    """Analyze a named options strategy with auto-priced legs.
+
+    Examples:
+
+        trading-cli options strategy covered-call --spot 11.12
+
+        trading-cli options strategy iron-condor --spot 450 --vol 0.20
+
+        trading-cli options strategy straddle --spot 100 --days 45
+    """
+    from trading_cli.strategy.options_strategies import (
+        covered_call, protective_put, bull_call_spread,
+        bear_put_spread, iron_condor, straddle,
+    )
+
+    T = days / 365.0
+    # Auto-calculate strikes and premiums around spot
+    atm = round(spot, 2)
+    step = round(spot * 0.03, 2) or 1.0
+
+    def _p(K, otype):
+        return round(BlackScholes.price(spot, K, T, rate, vol, otype), 4)
+
+    if strategy_name == "covered-call":
+        k = atm + step
+        result = covered_call(spot, k, _p(k, OptionType.CALL))
+    elif strategy_name == "protective-put":
+        k = atm - step
+        result = protective_put(spot, k, _p(k, OptionType.PUT))
+    elif strategy_name == "bull-spread":
+        k1, k2 = atm - step, atm + step
+        result = bull_call_spread(spot, k1, _p(k1, OptionType.CALL), k2, _p(k2, OptionType.CALL))
+    elif strategy_name == "bear-spread":
+        k1, k2 = atm + step, atm - step
+        result = bear_put_spread(spot, k1, _p(k1, OptionType.PUT), k2, _p(k2, OptionType.PUT))
+    elif strategy_name == "iron-condor":
+        k_pl, k_ps, k_cs, k_cl = atm - 2*step, atm - step, atm + step, atm + 2*step
+        result = iron_condor(
+            spot,
+            k_pl, _p(k_pl, OptionType.PUT), k_ps, _p(k_ps, OptionType.PUT),
+            k_cs, _p(k_cs, OptionType.CALL), k_cl, _p(k_cl, OptionType.CALL),
+        )
+    elif strategy_name == "straddle":
+        result = straddle(spot, atm, _p(atm, OptionType.CALL), _p(atm, OptionType.PUT))
+    else:
+        console.print(f"[red]Unknown strategy: {strategy_name}[/red]")
+        return
+
+    # Display
+    console.print(f"\n[cyan]{result.name}[/cyan] | Spot: {spot:.2f} | "
+                  f"Days: {days} | Vol: {vol:.0%}\n")
+
+    info = Table(show_header=False, box=None)
+    info.add_column("k", style="dim", width=20)
+    info.add_column("v", justify="right")
+    info.add_row("Net Premium", f"{'¥' if result.net_premium >= 0 else '-¥'}{abs(result.net_premium):.4f}")
+    info.add_row("Max Profit", f"[green]{result.max_profit:+.4f}[/green]")
+    info.add_row("Max Loss", f"[red]{result.max_loss:+.4f}[/red]")
+    info.add_row("Risk/Reward", f"{result.risk_reward_ratio:.2f}")
+    info.add_row("Break-even(s)", ", ".join(f"{b:.2f}" for b in result.break_evens) or "N/A")
+
+    console.print(Panel(info, title=f"[bold]{result.name}[/bold]", border_style="cyan"))
+
+    # Legs detail
+    table = Table(title="Strategy Legs")
+    table.add_column("Type", style="cyan")
+    table.add_column("Strike", justify="right")
+    table.add_column("Side")
+    table.add_column("Premium", justify="right")
+
+    for leg in result.legs:
+        side_str = "[green]Long[/green]" if leg.side > 0 else "[red]Short[/red]"
+        table.add_row(
+            leg.option_type.value, f"{leg.strike:.2f}",
+            side_str, f"{leg.premium:.4f}",
+        )
+    console.print(table)
+    console.print()
