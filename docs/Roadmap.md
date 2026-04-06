@@ -11,33 +11,35 @@
 
 **可交付物**: 基础CLI + 数据源 + 技术分析 ✅
 
-### Phase 2: 核心功能 (Week 4-7) ✅ 进行中
-**目标**: 完整的交易流程闭环
+### Phase 2: 核心功能 (Week 4-7) ✅ 完成
+**目标**: 完整的 9 个命令群组 + 交易流程闭环
 
 - Week 4: 策略框架 ✅
-  - [x] 策略定义模型
-  - [x] 策略注册表
+  - [x] 策略定义模型 + 注册表
   - [x] 4个内置策略 (MA Cross, RSI, MACD, Bollinger)
-  - [x] strategy 命令组
+  - [x] strategy 命令组 (create/list/show/delete)
 
-- Week 5: 回测引擎 🔄 **本周完成**
-  - [x] 回测框架
-  - [x] 信号生成和执行
+- Week 5: 回测引擎 ✅
+  - [x] 回测框架 + 信号执行
   - [x] 性能计算 (P&L, Win Rate, Max Drawdown, Sharpe)
-  - [x] backtest 命令组
-  - [x] 策略比较功能
+  - [x] backtest 命令组 (run/compare/history)
 
-**可交付物**: 策略创建 → 回测验证 → 性能分析 ✅
+- Week 6: 监控、报告、策略优化 ✅
+  - [x] monitor 命令组 (dashboard/watch/alert)
+  - [x] report 命令组 (portfolio/performance/export)
+  - [x] 策略优化器 (grid_search + genetic_optimize)
+  - [x] 增强 backtest compare + optimize 命令
 
-### Phase 2: 核心功能 (Week 4-7)
-**目标**: 完整的 9 个命令群组
+- Week 7: 交易执行、工作流、调试 ✅
+  - [x] trade 命令组 (order buy/sell/cancel, position list/close, account, risk)
+  - [x] 订单模型 (市价/限价/止损) + 风控引擎
+  - [x] 模拟交易引擎 (Paper Trading)
+  - [x] workflow 命令组 (YAML pipeline 编排)
+  - [x] debug 命令组 (connectivity/info/data-check)
 
-- Week 4: AI分析系统扩展
-- Week 5: 交易执行和风控
-- Week 6: 监控和报告系统
-- Week 7: 工作流编排和配置系统
+**可交付物**: 完整9命令组 + data→analyze→strategy→backtest→trade→monitor→report 全闭环 ✅
 
-**可交付物**: 完整的交易流程闭环
+**统计**: 99 tests | 6000+ 行代码 | 10 命令组 | 30+ CLI 子命令
 
 ### Phase 3: 期权支持 (Week 8-10)
 **目标**: 完整的期权交易支持
@@ -74,4 +76,11 @@
 
 ---
 
-详见项目文档。
+## 技术选型共识 (Issue #5)
+
+- **回测引擎**: vectorbt 优先 + backtrader 备选，统一接口层
+- **交易执行**: vnpy (veighna) — Phase 5
+- **期权回测**: 独立设计，不绑定 Phase 2 引擎
+- **工期**: Claude bot 驱动下 11-12 周可完成
+
+详见 docs/Framework-Analysis.md

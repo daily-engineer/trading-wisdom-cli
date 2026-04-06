@@ -14,6 +14,9 @@ from trading_cli.commands.strategy_cmd import strategy
 from trading_cli.commands.backtest_cmd import backtest
 from trading_cli.commands.monitor_cmd import monitor
 from trading_cli.commands.report_cmd import report
+from trading_cli.commands.trade_cmd import trade
+from trading_cli.commands.workflow_cmd import workflow
+from trading_cli.commands.debug_cmd import debug
 
 
 @click.group()
@@ -31,9 +34,9 @@ def cli(ctx):
 
         trading-cli data fetch 000001.SZ
 
-        trading-cli data fetch 600519 --days 60
+        trading-cli trade order buy 000001.SZ --qty 1000
 
-        trading-cli config show
+        trading-cli backtest optimize ma_cross 600519
 
     For more help on a specific command:
 
@@ -42,7 +45,7 @@ def cli(ctx):
     ctx.ensure_object(dict)
 
 
-# Register implemented command groups
+# All 9 command groups — Phase 2 complete
 cli.add_command(data)
 cli.add_command(config)
 cli.add_command(analyze)
@@ -50,27 +53,9 @@ cli.add_command(strategy)
 cli.add_command(backtest)
 cli.add_command(monitor)
 cli.add_command(report)
-
-
-# Placeholder command groups (to be implemented in later phases)
-
-
-@cli.group()
-def trade():
-    """💹 Trading Execution (Phase 2)"""
-    pass
-
-
-@cli.group()
-def workflow():
-    """🔄 Workflow Orchestration (Phase 2)"""
-    pass
-
-
-@cli.group()
-def debug():
-    """🐛 Debug Tools (Phase 2)"""
-    pass
+cli.add_command(trade)
+cli.add_command(workflow)
+cli.add_command(debug)
 
 
 if __name__ == "__main__":
