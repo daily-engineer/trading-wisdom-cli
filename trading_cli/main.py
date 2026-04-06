@@ -6,11 +6,14 @@ AI-powered trading framework supporting A-shares, Hong Kong stocks, US stocks, a
 """
 
 import click
-from pathlib import Path
+
+from trading_cli.commands.data_cmd import data
+from trading_cli.commands.config_cmd import config
+from trading_cli.commands.analyze_cmd import analyze
 
 
 @click.group()
-@click.version_option(version='0.1.0')
+@click.version_option(version="0.1.0")
 @click.pass_context
 def cli(ctx):
     """
@@ -21,87 +24,64 @@ def cli(ctx):
     Supports: A-shares | Hong Kong stocks | US stocks | Options
 
     Examples:
-        trading-cli data fetch stock 000001.SZ
-        trading-cli analyze stock AAPL --market US
-        trading-cli strategy backtest my_strategy
-        trading-cli trade order place buy --symbol 000001.SZ --quantity 100
+
+        trading-cli data fetch 000001.SZ
+
+        trading-cli data fetch 600519 --days 60
+
+        trading-cli config show
 
     For more help on a specific command:
+
         trading-cli COMMAND --help
     """
-    # Initialize context
     ctx.ensure_object(dict)
 
 
-# Command groups
-@cli.group()
-def data():
-    """📊 Data Management"""
-    pass
+# Register implemented command groups
+cli.add_command(data)
+cli.add_command(config)
+cli.add_command(analyze)
 
 
-@cli.group()
-def analyze():
-    """🤖 AI Analysis"""
-    pass
+# Placeholder command groups (to be implemented in later phases)
 
 
 @cli.group()
 def strategy():
-    """📈 Strategy Management"""
+    """📈 Strategy Management (Phase 2)"""
     pass
 
 
 @cli.group()
 def trade():
-    """💹 Trading Execution"""
+    """💹 Trading Execution (Phase 2)"""
     pass
 
 
 @cli.group()
 def monitor():
-    """👁️  Real-time Monitoring"""
-    pass
-
-
-@cli.group()
-def config():
-    """⚙️  Configuration"""
+    """👁️  Real-time Monitoring (Phase 2)"""
     pass
 
 
 @cli.group()
 def workflow():
-    """🔄 Workflow Orchestration"""
+    """🔄 Workflow Orchestration (Phase 2)"""
     pass
 
 
 @cli.group()
 def report():
-    """📋 Reporting"""
+    """📋 Reporting (Phase 2)"""
     pass
 
 
 @cli.group()
 def debug():
-    """🐛 Debug Tools"""
+    """🐛 Debug Tools (Phase 2)"""
     pass
 
 
-# Test commands
-@data.command()
-@click.argument('symbol')
-def fetch(symbol):
-    """Fetch data"""
-    click.echo(f"✓ Would fetch data for {symbol}")
-
-
-@analyze.command()
-@click.argument('symbol')
-def stock(symbol):
-    """Analyze stock"""
-    click.echo(f"✓ Would analyze {symbol}")
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli(obj={})
