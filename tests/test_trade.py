@@ -2,7 +2,14 @@
 
 import pytest
 
-from trading_cli.core.order import Account, Order, OrderSide, OrderStatus, OrderType, Position
+from trading_cli.core.order import (
+    Account,
+    Order,
+    OrderSide,
+    OrderStatus,
+    OrderType,
+    Position,
+)
 from trading_cli.core.risk import RiskConfig, RiskEngine
 from trading_cli.core.paper_trader import PaperTrader
 
@@ -26,15 +33,33 @@ class TestOrder:
 
     def test_account_equity(self):
         a = Account(cash=50000, initial_capital=100000)
-        a.positions["A"] = Position(symbol="A", quantity=100, avg_cost=10, current_price=12)
+        a.positions["A"] = Position(
+            symbol="A", quantity=100, avg_cost=10, current_price=12
+        )
         assert a.total_market_value == 1200
         assert a.total_equity == 51200
         assert a.total_pnl == -48800
 
     def test_account_open_orders(self):
         a = Account()
-        a.orders.append(Order(id="O1", symbol="A", side=OrderSide.BUY, quantity=100, status=OrderStatus.PENDING))
-        a.orders.append(Order(id="O2", symbol="B", side=OrderSide.BUY, quantity=50, status=OrderStatus.FILLED))
+        a.orders.append(
+            Order(
+                id="O1",
+                symbol="A",
+                side=OrderSide.BUY,
+                quantity=100,
+                status=OrderStatus.PENDING,
+            )
+        )
+        a.orders.append(
+            Order(
+                id="O2",
+                symbol="B",
+                side=OrderSide.BUY,
+                quantity=50,
+                status=OrderStatus.FILLED,
+            )
+        )
         assert len(a.get_open_orders()) == 1
         assert len(a.get_filled_orders()) == 1
 
@@ -58,7 +83,9 @@ class TestRiskEngine:
     def test_max_positions(self):
         engine = RiskEngine(RiskConfig(max_positions=1))
         account = Account(cash=100000, initial_capital=100000)
-        account.positions["B"] = Position(symbol="B", quantity=1, avg_cost=1, current_price=1)
+        account.positions["B"] = Position(
+            symbol="B", quantity=1, avg_cost=1, current_price=1
+        )
         order = Order(id="O1", symbol="A", side=OrderSide.BUY, quantity=100)
         result = engine.check_order(order, account, 10.0)
         assert not result.passed
@@ -84,7 +111,9 @@ class TestRiskEngine:
         assert not result.passed
 
     def test_max_shares(self):
-        engine = RiskEngine(RiskConfig(max_position_pct=0.25, min_cash_reserve_pct=0.10))
+        engine = RiskEngine(
+            RiskConfig(max_position_pct=0.25, min_cash_reserve_pct=0.10)
+        )
         account = Account(cash=100000, initial_capital=100000)
         shares = engine.max_shares(account, 10.0)
         # max by concentration: 100000 * 0.25 = 25000 → 2500 shares
@@ -132,8 +161,14 @@ class TestPaperTrader:
 
     def test_cancel_order(self):
         trader = PaperTrader()
-        order = trader.place_order("TEST", OrderSide.BUY, 100,
-                                   order_type=OrderType.LIMIT, price=5.0, current_price=10.0)
+        order = trader.place_order(
+            "TEST",
+            OrderSide.BUY,
+            100,
+            order_type=OrderType.LIMIT,
+            price=5.0,
+            current_price=10.0,
+        )
         # Limit orders stay pending
         assert order.status == OrderStatus.PENDING
         assert trader.cancel_order(order.id) is True
@@ -157,3 +192,34 @@ class TestPaperTrader:
         assert pos.quantity == 200
         # avg_cost should be between 10 and 12 (with slippage)
         assert 10.0 < pos.avg_cost < 13.0
+
+    def test_paper_trader_is_base_trader(self):
+        from trading_cli.core.base_trader import BaseTrader
+
+        trader = PaperTrader()
+        assert isinstance(trader, BaseTrader)
+
+    def test_emergency_stop_cancels_then_closes(self):
+        trader = PaperTrader(initial_capital=100000)
+        # Place a limit order (stays pending)
+        trader.place_order(
+            "TEST",
+            OrderSide.BUY,
+            100,
+            order_type=OrderType.LIMIT,
+            price=5.0,
+            current_price=10.0,
+        )
+        # Buy a position
+        trader.place_order("TEST2", OrderSide.BUY, 50, current_price=20.0)
+
+        orders = trader.emergency_stop({"TEST2": 20.0})
+
+        # Pending order should be cancelled
+        open_orders = trader.account.get_open_orders()
+        assert len(open_orders) == 0
+        # Position should be closed
+        assert trader.account.position_count == 0
+        # One sell order returned
+        assert len(orders) == 1
+        assert orders[0].side == OrderSide.SELL

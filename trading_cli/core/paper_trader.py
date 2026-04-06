@@ -13,10 +13,11 @@ from trading_cli.core.order import (
     OrderType,
     Position,
 )
+from trading_cli.core.base_trader import BaseTrader
 from trading_cli.core.risk import RiskCheckResult, RiskEngine
 
 
-class PaperTrader:
+class PaperTrader(BaseTrader):
     """Simulated trading engine for paper trading.
 
     Maintains an Account and processes orders against supplied prices.
@@ -169,3 +170,24 @@ class PaperTrader:
                     del self.account.positions[order.symbol]
 
         self.account.orders.append(order)
+
+    def emergency_stop(self, prices: dict[str, float]) -> list[Order]:
+        """Cancel all open orders then market-sell all positions."""
+        orders: list[Order] = []
+
+        # Step 1: cancel all open orders
+        for order in list(self.account.get_open_orders()):
+            self.cancel_order(order.id)
+
+        # Step 2: close all positions
+        for symbol in list(self.account.positions.keys()):
+            pos = self.account.positions.get(symbol)
+            if pos is None:
+                continue
+            price = prices.get(symbol, pos.current_price)
+            if price > 0:
+                result = self.close_position(symbol, price)
+                if result:
+                    orders.append(result)
+
+        return orders
