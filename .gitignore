@@ -51,4 +51,3 @@ config/local.yaml
 Thumbs.db
 
 # Docker
-.dockerignore

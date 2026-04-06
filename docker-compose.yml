@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  trading-cli:
+    build: .
+    image: trading-wisdom-cli:1.0.0
+    volumes:
+      - ~/.trading-cli:/home/appuser/.trading-cli  # config + trade_log.jsonl
+    environment:
+      - IB_HOST=${IB_HOST:-127.0.0.1}
+      - IB_PORT=${IB_PORT:-7497}
+      - IB_CLIENT_ID=${IB_CLIENT_ID:-1}
+    stdin_open: true
+    tty: true
