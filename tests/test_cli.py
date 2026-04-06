@@ -1,9 +1,9 @@
 """Tests for CLI commands."""
 
+import pytest
 from click.testing import CliRunner
 
 from trading_cli.main import cli
-
 
 runner = CliRunner()
 
@@ -64,3 +64,25 @@ def test_data_sources():
     result = runner.invoke(cli, ["data", "sources"])
     assert result.exit_code == 0
     assert "tushare" in result.output
+
+
+def test_emergency_stop_paper(cli_runner):
+    """Emergency stop in paper mode outputs a result message."""
+    result = cli_runner.invoke(cli, ["trade", "emergency", "stop"])
+    assert result.exit_code == 0
+    # Either "No open positions" (empty account) or shows results table
+    assert "No open positions" in result.output or "Emergency" in result.output
+
+
+def test_order_buy_live_requires_confirm(cli_runner):
+    """--live flag without --yes should show the LIVE ORDER warning prompt."""
+    result = cli_runner.invoke(
+        cli, ["trade", "order", "buy", "AAPL", "--qty", "1", "--live"], input="n\n"
+    )
+    assert result.exit_code == 0
+    assert "LIVE ORDER" in result.output
+
+
+@pytest.fixture
+def cli_runner():
+    return CliRunner()

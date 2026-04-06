@@ -1,31 +1,43 @@
-"""Trading execution commands — paper trading with risk management."""
+"""Trading execution commands — paper and live trading with risk management."""
 
 from __future__ import annotations
 
 from datetime import date, timedelta
+from typing import Optional
 
 import click
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
+from trading_cli.core.base_trader import BaseTrader
 from trading_cli.core.config import get_config
-from trading_cli.core.data_source import DataFetchRequest, Market, registry
+from trading_cli.core.data_source import DataFetchRequest, registry
 from trading_cli.core.tushare_provider import TushareProvider
 from trading_cli.core.order import OrderSide, OrderType
 from trading_cli.core.paper_trader import PaperTrader
+from trading_cli.core.trade_logger import TradeLogger
 
 console = Console()
 
-# Session-level paper trader
-_trader: PaperTrader | None = None
+# Session-level trader singletons
+_paper_trader: Optional[PaperTrader] = None
+_live_trader: Optional[BaseTrader] = None
+
+_logger = TradeLogger()
 
 
-def _get_trader() -> PaperTrader:
-    global _trader
-    if _trader is None:
-        _trader = PaperTrader()
-    return _trader
+def _get_trader(live: bool = False) -> BaseTrader:
+    global _paper_trader, _live_trader
+    if live:
+        if _live_trader is None:
+            from trading_cli.core.live_trader import RealTrader
+
+            _live_trader = RealTrader()
+        return _live_trader
+    if _paper_trader is None:
+        _paper_trader = PaperTrader()
+    return _paper_trader
 
 
 def _ensure_providers() -> None:
@@ -34,7 +46,7 @@ def _ensure_providers() -> None:
         registry.register(TushareProvider(config.data.tushare))
 
 
-def _fetch_price(symbol: str) -> float | None:
+def _fetch_price(symbol: str) -> Optional[float]:
     """Fetch the latest closing price for a symbol."""
     _ensure_providers()
     config = get_config()
@@ -51,6 +63,14 @@ def _fetch_price(symbol: str) -> float | None:
     except Exception:
         pass
     return None
+
+
+def _confirm_live(symbol: str, side: str, qty: int, price: Optional[float]) -> bool:
+    """Show live-order warning and prompt for confirmation. Returns True if confirmed."""
+    price_str = f"@ ${price:.2f}" if price else "@ MARKET"
+    console.print(f"\n[bold red]LIVE ORDER — REAL MONEY[/bold red]")
+    console.print(f"  {side} {symbol} × {qty} {price_str}")
+    return click.confirm("Confirm?", default=False)
 
 
 @click.group()
@@ -78,16 +98,31 @@ def order():
     default=None,
     help="Limit price (omit for market order).",
 )
-def order_buy(symbol: str, qty: int, price: float | None):
+@click.option("--live", is_flag=True, default=False, help="Use real IBKR account.")
+@click.option(
+    "--yes",
+    "skip_confirm",
+    is_flag=True,
+    default=False,
+    help="Skip confirmation (live mode only).",
+)
+def order_buy(
+    symbol: str, qty: int, price: Optional[float], live: bool, skip_confirm: bool
+):
     """Place a buy order.
 
     Examples:
 
         trading-cli trade order buy 000001.SZ --qty 1000
 
-        trading-cli trade order buy 600519 --qty 100 --price 1700
+        trading-cli trade order buy AAPL --qty 100 --live
     """
-    trader = _get_trader()
+    if live and not skip_confirm:
+        if not _confirm_live(symbol, "BUY", qty, price):
+            console.print("[yellow]Cancelled.[/yellow]")
+            return
+
+    trader = _get_trader(live)
     current_price = price or _fetch_price(symbol)
     if current_price is None:
         console.print(f"[red]Cannot determine price for {symbol}.[/red]")
@@ -103,12 +138,13 @@ def order_buy(symbol: str, qty: int, price: float | None):
         current_price=current_price,
     )
 
+    mode = "live" if live else "paper"
+    if not live:
+        _logger.log(result, mode=mode)
+
     if result.status.value == "FILLED":
         console.print(
-            f"[green]✓ BUY FILLED[/green] {symbol} × {qty} @ ¥{result.filled_price:.2f}"
-        )
-        console.print(
-            f"  Commission: ¥{result.commission:.2f} | Cash remaining: ¥{trader.account.cash:,.2f}"
+            f"[green]✓ BUY FILLED[/green] [{mode}] {symbol} × {qty} @ ${result.filled_price:.2f}"
         )
     elif result.status.value == "REJECTED":
         console.print(f"[red]✗ REJECTED:[/red] {result.message}")
@@ -128,28 +164,44 @@ def order_buy(symbol: str, qty: int, price: float | None):
     help="Shares to sell (0 = close entire position).",
 )
 @click.option("--price", "-p", type=float, default=None, help="Limit price.")
-def order_sell(symbol: str, qty: int, price: float | None):
+@click.option("--live", is_flag=True, default=False, help="Use real IBKR account.")
+@click.option(
+    "--yes",
+    "skip_confirm",
+    is_flag=True,
+    default=False,
+    help="Skip confirmation (live mode only).",
+)
+def order_sell(
+    symbol: str, qty: int, price: Optional[float], live: bool, skip_confirm: bool
+):
     """Place a sell order.
 
     Examples:
 
         trading-cli trade order sell 000001.SZ --qty 500
 
-        trading-cli trade order sell 600519  (closes entire position)
+        trading-cli trade order sell AAPL --live --yes
     """
-    trader = _get_trader()
+    trader = _get_trader(live)
     current_price = price or _fetch_price(symbol)
     if current_price is None:
         console.print(f"[red]Cannot determine price for {symbol}.[/red]")
         return
 
-    # Default: close entire position
-    if qty == 0:
-        pos = trader.account.positions.get(symbol.upper())
+    # Default: close entire position (paper mode only)
+    if qty == 0 and not live:
+        paper = trader  # type: ignore[assignment]
+        pos = paper.account.positions.get(symbol.upper())  # type: ignore[attr-defined]
         if not pos:
             console.print(f"[yellow]No position in {symbol} to sell.[/yellow]")
             return
         qty = pos.quantity
+
+    if live and not skip_confirm:
+        if not _confirm_live(symbol, "SELL", qty, price):
+            console.print("[yellow]Cancelled.[/yellow]")
+            return
 
     result = trader.place_order(
         symbol=symbol,
@@ -160,12 +212,13 @@ def order_sell(symbol: str, qty: int, price: float | None):
         current_price=current_price,
     )
 
+    mode = "live" if live else "paper"
+    if not live:
+        _logger.log(result, mode=mode)
+
     if result.status.value == "FILLED":
         console.print(
-            f"[green]✓ SELL FILLED[/green] {symbol} × {qty} @ ¥{result.filled_price:.2f}"
-        )
-        console.print(
-            f"  Commission: ¥{result.commission:.2f} | Cash: ¥{trader.account.cash:,.2f}"
+            f"[green]✓ SELL FILLED[/green] [{mode}] {symbol} × {qty} @ ${result.filled_price:.2f}"
         )
     elif result.status.value == "REJECTED":
         console.print(f"[red]✗ REJECTED:[/red] {result.message}")
@@ -180,13 +233,14 @@ def order_sell(symbol: str, qty: int, price: float | None):
 )
 def order_list(status: str):
     """List orders."""
-    trader = _get_trader()
-    orders = trader.account.orders
+    trader = _get_trader(live=False)
+    paper = trader  # type: ignore[assignment]
+    orders = paper.account.orders  # type: ignore[attr-defined]
 
     if status == "open":
-        orders = trader.account.get_open_orders()
+        orders = paper.account.get_open_orders()  # type: ignore[attr-defined]
     elif status == "filled":
-        orders = trader.account.get_filled_orders()
+        orders = paper.account.get_filled_orders()  # type: ignore[attr-defined]
     elif status == "cancelled":
         orders = [o for o in orders if o.status.value == "CANCELLED"]
 
@@ -212,9 +266,9 @@ def order_list(status: str):
             "PENDING": "yellow",
         }.get(o.status.value, "white")
         p = (
-            f"¥{o.filled_price:.2f}"
+            f"${o.filled_price:.2f}"
             if o.filled_price
-            else (f"¥{o.price:.2f}" if o.price else "MKT")
+            else (f"${o.price:.2f}" if o.price else "MKT")
         )
         table.add_row(
             o.id,
@@ -232,7 +286,7 @@ def order_list(status: str):
 @click.argument("order_id")
 def order_cancel(order_id: str):
     """Cancel a pending order."""
-    trader = _get_trader()
+    trader = _get_trader(live=False)
     if trader.cancel_order(order_id):
         console.print(f"[green]✓[/green] Order {order_id} cancelled.")
     else:
@@ -251,8 +305,9 @@ def position():
 @position.command("list")
 def position_list():
     """List all open positions."""
-    trader = _get_trader()
-    positions = trader.account.positions
+    trader = _get_trader(live=False)
+    paper = trader  # type: ignore[assignment]
+    positions = paper.account.positions  # type: ignore[attr-defined]
 
     if not positions:
         console.print("[yellow]No open positions.[/yellow]")
@@ -272,10 +327,10 @@ def position_list():
         table.add_row(
             sym,
             f"{p.quantity:,}",
-            f"¥{p.avg_cost:.2f}",
-            f"¥{p.current_price:.2f}",
-            f"¥{p.market_value:,.2f}",
-            f"[{c}]¥{p.unrealized_pnl:,.2f}[/{c}]",
+            f"${p.avg_cost:.2f}",
+            f"${p.current_price:.2f}",
+            f"${p.market_value:,.2f}",
+            f"[{c}]${p.unrealized_pnl:,.2f}[/{c}]",
             f"[{c}]{p.unrealized_pnl_pct:+.2f}%[/{c}]",
         )
     console.print(table)
@@ -283,23 +338,32 @@ def position_list():
 
 @position.command("close")
 @click.argument("symbol")
-def position_close(symbol: str):
+@click.option("--live", is_flag=True, default=False, help="Use real IBKR account.")
+@click.option(
+    "--yes", "skip_confirm", is_flag=True, default=False, help="Skip confirmation."
+)
+def position_close(symbol: str, live: bool, skip_confirm: bool):
     """Close an entire position at market price."""
-    trader = _get_trader()
+    if live and not skip_confirm:
+        if not _confirm_live(symbol, "SELL (close)", 0, None):
+            console.print("[yellow]Cancelled.[/yellow]")
+            return
+
+    trader = _get_trader(live)
     current_price = _fetch_price(symbol)
     if current_price is None:
         console.print(f"[red]Cannot determine price for {symbol}.[/red]")
         return
 
-    order = trader.close_position(symbol, current_price)
-    if order is None:
+    result = trader.close_position(symbol, current_price)
+    if result is None:
         console.print(f"[yellow]No position in {symbol}.[/yellow]")
-    elif order.status.value == "FILLED":
+    elif result.status.value == "FILLED":
         console.print(
-            f"[green]✓ Position closed[/green] {symbol} × {order.filled_quantity} @ ¥{order.filled_price:.2f}"
+            f"[green]✓ Position closed[/green] {symbol} × {result.filled_quantity} @ ${result.filled_price:.2f}"
         )
     else:
-        console.print(f"[red]Close failed:[/red] {order.message}")
+        console.print(f"[red]Close failed:[/red] {result.message}")
 
 
 # ---- account ----
@@ -308,20 +372,21 @@ def position_close(symbol: str):
 @trade.command()
 def account():
     """Show account summary."""
-    trader = _get_trader()
-    a = trader.account
+    trader = _get_trader(live=False)
+    paper = trader  # type: ignore[assignment]
+    a = paper.account  # type: ignore[attr-defined]
 
     pnl_c = "green" if a.total_pnl >= 0 else "red"
     info = Table(show_header=False, box=None)
     info.add_column("k", style="dim", width=18)
     info.add_column("v", justify="right")
     info.add_row("Account ID", a.account_id)
-    info.add_row("Initial Capital", f"¥{a.initial_capital:,.2f}")
-    info.add_row("Cash", f"¥{a.cash:,.2f}")
-    info.add_row("Market Value", f"¥{a.total_market_value:,.2f}")
-    info.add_row("Total Equity", f"[bold]¥{a.total_equity:,.2f}[/bold]")
+    info.add_row("Initial Capital", f"${a.initial_capital:,.2f}")
+    info.add_row("Cash", f"${a.cash:,.2f}")
+    info.add_row("Market Value", f"${a.total_market_value:,.2f}")
+    info.add_row("Total Equity", f"[bold]${a.total_equity:,.2f}[/bold]")
     info.add_row(
-        "P&L", f"[{pnl_c}]¥{a.total_pnl:,.2f} ({a.total_pnl_pct:+.2f}%)[/{pnl_c}]"
+        "P&L", f"[{pnl_c}]${a.total_pnl:,.2f} ({a.total_pnl_pct:+.2f}%)[/{pnl_c}]"
     )
     info.add_row("Open Positions", str(a.position_count))
     info.add_row("Total Orders", str(len(a.orders)))
@@ -339,7 +404,7 @@ def account():
 @trade.command()
 def risk():
     """Run portfolio risk check."""
-    trader = _get_trader()
+    trader = _get_trader(live=False)
     result = trader.check_risk()
 
     if result.passed:
@@ -349,12 +414,75 @@ def risk():
         for v in result.violations:
             console.print(f"  [red]•[/red] {v}")
 
-    # Show risk limits
-    rc = trader.risk_engine.config
+    paper = trader  # type: ignore[assignment]
+    rc = paper.risk_engine.config  # type: ignore[attr-defined]
     console.print(
         f"\n[dim]Risk limits: max position {rc.max_position_pct:.0%} | "
         f"max positions {rc.max_positions} | "
         f"stop loss {rc.max_single_loss_pct}% | "
         f"daily loss limit {rc.max_daily_loss_pct}% | "
         f"cash reserve {rc.min_cash_reserve_pct:.0%}[/dim]"
+    )
+
+
+# ---- emergency sub-group ----
+
+
+@trade.group()
+def emergency():
+    """🚨 Emergency operations."""
+    pass
+
+
+@emergency.command("stop")
+@click.option("--live", is_flag=True, default=False, help="Use real IBKR account.")
+def emergency_stop(live: bool):
+    """Cancel all orders and close all positions immediately.
+
+    This command does NOT ask for confirmation — it acts immediately.
+
+    Examples:
+
+        trading-cli trade emergency stop           (paper mode — safe simulation)
+
+        trading-cli trade emergency stop --live    (REAL MONEY — acts instantly)
+    """
+    trader = _get_trader(live)
+
+    if live:
+        console.print("[bold red]🚨 EMERGENCY STOP — LIVE MODE — REAL MONEY[/bold red]")
+    else:
+        console.print("[bold yellow]🚨 Emergency Stop (paper mode)[/bold yellow]")
+
+    # Collect prices for paper mode from current position prices
+    prices: dict[str, float] = {}
+    if not live:
+        paper = trader  # type: ignore[assignment]
+        positions = paper.account.positions  # type: ignore[attr-defined]
+        for sym, pos in positions.items():
+            prices[sym] = pos.current_price
+        if not positions:
+            console.print("[yellow]No open positions to close.[/yellow]")
+            return
+
+    orders = trader.emergency_stop(prices)
+
+    if not orders:
+        console.print("[green]✓ No positions were open.[/green]")
+        return
+
+    table = Table(title="Emergency Stop Results")
+    table.add_column("Symbol", style="cyan")
+    table.add_column("Qty", justify="right")
+    table.add_column("Status")
+
+    for o in orders:
+        status_c = "green" if o.status.value == "FILLED" else "red"
+        table.add_row(
+            o.symbol, str(o.quantity), f"[{status_c}]{o.status.value}[/{status_c}]"
+        )
+
+    console.print(table)
+    console.print(
+        f"[green]✓ Emergency stop complete — {len(orders)} position(s) closed.[/green]"
     )
