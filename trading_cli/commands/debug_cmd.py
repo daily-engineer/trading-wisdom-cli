@@ -55,7 +55,11 @@ def connectivity():
     table.add_row(
         "Tushare token",
         "[green]✓ Set[/green]" if has_token else "[red]✗ Missing[/red]",
-        f"{config.data.tushare.token[:8]}..." if has_token else "Run: config set data.tushare.token <TOKEN>",
+        (
+            f"{config.data.tushare.token[:8]}..."
+            if has_token
+            else "Run: config set data.tushare.token <TOKEN>"
+        ),
     )
 
     console.print()
@@ -88,7 +92,10 @@ def info():
     for name, path in dirs.items():
         exists = path.exists()
         count = len(list(path.iterdir())) if exists else 0
-        table.add_row(name, f"{path} ({count} files)" if exists else f"{path} [dim](not created)[/dim]")
+        table.add_row(
+            name,
+            f"{path} ({count} files)" if exists else f"{path} [dim](not created)[/dim]",
+        )
 
     # Dependencies
     deps = ["click", "rich", "pandas", "numpy", "pydantic", "yaml", "requests"]
@@ -117,9 +124,13 @@ def data_check(symbol: str):
     # Step 1: Config
     config = get_config()
     has_token = bool(config.data.tushare.token)
-    console.print(f"  1. Token configured: {'[green]✓[/green]' if has_token else '[red]✗[/red]'}")
+    console.print(
+        f"  1. Token configured: {'[green]✓[/green]' if has_token else '[red]✗[/red]'}"
+    )
     if not has_token:
-        console.print("     [red]Fix: trading-cli config set data.tushare.token YOUR_TOKEN[/red]")
+        console.print(
+            "     [red]Fix: trading-cli config set data.tushare.token YOUR_TOKEN[/red]"
+        )
         return
 
     # Step 2: Provider
@@ -127,7 +138,9 @@ def data_check(symbol: str):
         registry.register(TushareProvider(config.data.tushare))
     dp = registry.get(config.data.default_provider)
     connected = dp.check_connection()
-    console.print(f"  2. Provider connected: {'[green]✓[/green]' if connected else '[red]✗[/red]'}")
+    console.print(
+        f"  2. Provider connected: {'[green]✓[/green]' if connected else '[red]✗[/red]'}"
+    )
 
     # Step 3: Data fetch
     request = DataFetchRequest(
@@ -140,11 +153,15 @@ def data_check(symbol: str):
         console.print(f"  3. Data fetch: [green]✓ {result.row_count} rows[/green]")
         if not result.is_empty:
             df = result.data
-            console.print(f"     Date range: {df['trade_date'].iloc[0].date()} → {df['trade_date'].iloc[-1].date()}")
+            console.print(
+                f"     Date range: {df['trade_date'].iloc[0].date()} → {df['trade_date'].iloc[-1].date()}"
+            )
             console.print(f"     Columns: {', '.join(df.columns)}")
             console.print(f"     Last close: ¥{df['close'].iloc[-1]:.2f}")
         else:
-            console.print("     [yellow]⚠ Empty result — symbol may be invalid or delisted[/yellow]")
+            console.print(
+                "     [yellow]⚠ Empty result — symbol may be invalid or delisted[/yellow]"
+            )
     except Exception as e:
         console.print(f"  3. Data fetch: [red]✗ {e}[/red]")
 

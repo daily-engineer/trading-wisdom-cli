@@ -33,11 +33,15 @@ class RiskConfig:
         max_daily_loss_pct: float = 5.0,
         min_cash_reserve_pct: float = 0.10,
     ):
-        self.max_position_pct = max_position_pct       # max % of equity per position
-        self.max_positions = max_positions               # max number of positions
-        self.max_single_loss_pct = max_single_loss_pct   # max loss % per trade before stop
-        self.max_daily_loss_pct = max_daily_loss_pct     # max daily loss % before halt
-        self.min_cash_reserve_pct = min_cash_reserve_pct # min cash reserve as % of equity
+        self.max_position_pct = max_position_pct  # max % of equity per position
+        self.max_positions = max_positions  # max number of positions
+        self.max_single_loss_pct = (
+            max_single_loss_pct  # max loss % per trade before stop
+        )
+        self.max_daily_loss_pct = max_daily_loss_pct  # max daily loss % before halt
+        self.min_cash_reserve_pct = (
+            min_cash_reserve_pct  # min cash reserve as % of equity
+        )
 
 
 class RiskEngine:
@@ -46,13 +50,17 @@ class RiskEngine:
     def __init__(self, config: Optional[RiskConfig] = None):
         self.config = config or RiskConfig()
 
-    def check_order(self, order: Order, account: Account, current_price: float) -> RiskCheckResult:
+    def check_order(
+        self, order: Order, account: Account, current_price: float
+    ) -> RiskCheckResult:
         """Run all pre-trade risk checks on an order."""
         violations: list[str] = []
 
         if order.side == OrderSide.BUY:
             self._check_buying_power(order, account, current_price, violations)
-            self._check_position_concentration(order, account, current_price, violations)
+            self._check_position_concentration(
+                order, account, current_price, violations
+            )
             self._check_max_positions(order, account, violations)
             self._check_cash_reserve(order, account, current_price, violations)
 
@@ -118,30 +126,45 @@ class RiskEngine:
 
     # --- private checks ---
 
-    def _check_buying_power(self, order: Order, account: Account, price: float, v: list[str]):
+    def _check_buying_power(
+        self, order: Order, account: Account, price: float, v: list[str]
+    ):
         cost = order.quantity * price * (1 + account.commission_rate + account.slippage)
         if cost > account.cash:
             v.append(f"Insufficient cash: need ¥{cost:,.0f}, have ¥{account.cash:,.0f}")
 
-    def _check_position_concentration(self, order: Order, account: Account, price: float, v: list[str]):
+    def _check_position_concentration(
+        self, order: Order, account: Account, price: float, v: list[str]
+    ):
         new_value = order.quantity * price
         existing = account.positions.get(order.symbol)
         if existing:
             new_value += existing.market_value
-        if account.total_equity > 0 and new_value / account.total_equity > self.config.max_position_pct:
+        if (
+            account.total_equity > 0
+            and new_value / account.total_equity > self.config.max_position_pct
+        ):
             v.append(
                 f"Position {order.symbol} would be {new_value / account.total_equity:.1%} "
                 f"of equity, exceeds {self.config.max_position_pct:.0%} limit"
             )
 
     def _check_max_positions(self, order: Order, account: Account, v: list[str]):
-        if order.symbol not in account.positions and account.position_count >= self.config.max_positions:
+        if (
+            order.symbol not in account.positions
+            and account.position_count >= self.config.max_positions
+        ):
             v.append(f"Max positions ({self.config.max_positions}) reached")
 
-    def _check_cash_reserve(self, order: Order, account: Account, price: float, v: list[str]):
+    def _check_cash_reserve(
+        self, order: Order, account: Account, price: float, v: list[str]
+    ):
         cost = order.quantity * price
         remaining_cash = account.cash - cost
-        if account.total_equity > 0 and remaining_cash / account.total_equity < self.config.min_cash_reserve_pct:
+        if (
+            account.total_equity > 0
+            and remaining_cash / account.total_equity < self.config.min_cash_reserve_pct
+        ):
             v.append(
                 f"Order would reduce cash reserve below {self.config.min_cash_reserve_pct:.0%} minimum"
             )

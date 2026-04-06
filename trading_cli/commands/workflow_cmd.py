@@ -87,6 +87,7 @@ def run(pipeline_file: str, var: tuple[str, ...], dry_run: bool):
 
         # Execute by invoking the CLI programmatically
         from trading_cli.main import cli
+
         try:
             cli.main(cmd.split(), standalone_mode=False)
         except SystemExit:
@@ -109,7 +110,9 @@ def init():
     path = WORKFLOWS_DIR / "example_pipeline.yaml"
     path.write_text(EXAMPLE_PIPELINE, encoding="utf-8")
     console.print(f"[green]✓[/green] Example pipeline created at [cyan]{path}[/cyan]")
-    console.print("[dim]Edit it, then run: trading-cli workflow run <path> -v symbol=000001.SZ[/dim]")
+    console.print(
+        "[dim]Edit it, then run: trading-cli workflow run <path> -v symbol=000001.SZ[/dim]"
+    )
 
 
 @workflow.command("list")

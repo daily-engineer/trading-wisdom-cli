@@ -88,8 +88,11 @@ class PerformanceMetrics(BaseModel):
 
     @property
     def return_pct(self) -> float:
-        return ((self.ending_equity - self.starting_equity) / self.starting_equity * 100
-                if self.starting_equity else 0.0)
+        return (
+            (self.ending_equity - self.starting_equity) / self.starting_equity * 100
+            if self.starting_equity
+            else 0.0
+        )
 
 
 class ReportGenerator:
@@ -143,7 +146,10 @@ class ReportGenerator:
 
     def export_json(self, report: dict, filename: Optional[str] = None) -> Path:
         """Export report to JSON file."""
-        name = filename or f"report_{report['type']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        name = (
+            filename
+            or f"report_{report['type']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
         path = self.REPORTS_DIR / name
         with open(path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)

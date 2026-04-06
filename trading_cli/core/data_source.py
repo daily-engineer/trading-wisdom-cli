@@ -96,9 +96,7 @@ class DataProviderRegistry:
     def get(self, name: str) -> DataProvider:
         if name not in self._providers:
             available = ", ".join(self._providers.keys()) or "none"
-            raise ValueError(
-                f"Unknown data provider: '{name}'. Available: {available}"
-            )
+            raise ValueError(f"Unknown data provider: '{name}'. Available: {available}")
         return self._providers[name]
 
     def list_providers(self) -> list[str]:

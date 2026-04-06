@@ -8,7 +8,6 @@ from typing import Optional
 import yaml
 from pydantic import BaseModel, Field
 
-
 # Default config directory
 DEFAULT_CONFIG_DIR = Path.home() / ".trading-cli"
 DEFAULT_CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.yaml"

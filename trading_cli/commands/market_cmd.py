@@ -10,7 +10,12 @@ from rich.table import Table
 from rich.panel import Panel
 
 from trading_cli.core.market import (
-    MARKETS, Currency, get_market, detect_market, fx_rate, convert_currency,
+    MARKETS,
+    Currency,
+    get_market,
+    detect_market,
+    fx_rate,
+    convert_currency,
     normalize_symbol,
 )
 from trading_cli.core.data_source import DataFetchRequest, registry
@@ -48,7 +53,9 @@ def market_info(market_code: str):
 
         trading-cli market info US
     """
-    codes = list(MARKETS.keys()) if market_code.lower() == "all" else [market_code.upper()]
+    codes = (
+        list(MARKETS.keys()) if market_code.lower() == "all" else [market_code.upper()]
+    )
 
     for code in codes:
         try:
@@ -73,13 +80,17 @@ def market_info(market_code: str):
         )
         info.add_row("Sessions", sessions)
 
-        console.print(Panel(info, title=f"[cyan]{m.code}[/cyan] Market", border_style="blue"))
+        console.print(
+            Panel(info, title=f"[cyan]{m.code}[/cyan] Market", border_style="blue")
+        )
     console.print()
 
 
 @market.command()
 @click.option("--amount", "-a", type=float, default=10000, help="Amount to convert.")
-@click.option("--from", "from_ccy", type=click.Choice(["CNY", "USD", "HKD"]), default="USD")
+@click.option(
+    "--from", "from_ccy", type=click.Choice(["CNY", "USD", "HKD"]), default="USD"
+)
 @click.option("--to", "to_ccy", type=click.Choice(["CNY", "USD", "HKD"]), default="CNY")
 def fx(amount: float, from_ccy: str, to_ccy: str):
     """Show FX rates and convert currencies.
@@ -117,8 +128,13 @@ def fx(amount: float, from_ccy: str, to_ccy: str):
 @market.command()
 @click.argument("symbols", nargs=-1, required=True)
 @click.option("--days", "-d", type=int, default=30, help="Lookback days.")
-@click.option("--base-currency", "-c", type=click.Choice(["CNY", "USD", "HKD"]),
-              default="CNY", help="Convert all values to this currency.")
+@click.option(
+    "--base-currency",
+    "-c",
+    type=click.Choice(["CNY", "USD", "HKD"]),
+    default="CNY",
+    help="Convert all values to this currency.",
+)
 def compare(symbols: tuple[str, ...], days: int, base_currency: str):
     """Compare stocks across markets in a unified view.
 
@@ -130,7 +146,9 @@ def compare(symbols: tuple[str, ...], days: int, base_currency: str):
     """
     _ensure_all_providers()
 
-    table = Table(title=f"Cross-Market Comparison (in {base_currency})", show_lines=True)
+    table = Table(
+        title=f"Cross-Market Comparison (in {base_currency})", show_lines=True
+    )
     table.add_column("Symbol", style="cyan bold")
     table.add_column("Market")
     table.add_column("Price", justify="right")
@@ -151,6 +169,7 @@ def compare(symbols: tuple[str, ...], days: int, base_currency: str):
             continue
 
         from trading_cli.core.data_source import Market as MktEnum
+
         request = DataFetchRequest(
             symbol=normalize_symbol(sym, mkt),
             start_date=date.today() - timedelta(days=days),
@@ -165,7 +184,9 @@ def compare(symbols: tuple[str, ...], days: int, base_currency: str):
             continue
 
         if result.is_empty or len(result.data) < 2:
-            table.add_row(sym, mkt, "[yellow]N/A[/yellow]", "-", "-", "-", provider_name)
+            table.add_row(
+                sym, mkt, "[yellow]N/A[/yellow]", "-", "-", "-", provider_name
+            )
             continue
 
         df = result.data
@@ -180,7 +201,8 @@ def compare(symbols: tuple[str, ...], days: int, base_currency: str):
 
         chg_c = "green" if chg >= 0 else "red"
         table.add_row(
-            normalize_symbol(sym, mkt), mkt,
+            normalize_symbol(sym, mkt),
+            mkt,
             f"{local_ccy} {close:,.2f}",
             f"{base_currency} {converted:,.2f}",
             f"[{chg_c}]{chg:+.2f}%[/{chg_c}]",

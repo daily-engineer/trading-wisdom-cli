@@ -61,6 +61,7 @@ def trade():
 
 # ---- order sub-group ----
 
+
 @trade.group()
 def order():
     """Manage orders."""
@@ -70,7 +71,13 @@ def order():
 @order.command("buy")
 @click.argument("symbol")
 @click.option("--qty", "-q", type=int, required=True, help="Number of shares.")
-@click.option("--price", "-p", type=float, default=None, help="Limit price (omit for market order).")
+@click.option(
+    "--price",
+    "-p",
+    type=float,
+    default=None,
+    help="Limit price (omit for market order).",
+)
 def order_buy(symbol: str, qty: int, price: float | None):
     """Place a buy order.
 
@@ -88,22 +95,38 @@ def order_buy(symbol: str, qty: int, price: float | None):
 
     order_type = OrderType.LIMIT if price else OrderType.MARKET
     result = trader.place_order(
-        symbol=symbol, side=OrderSide.BUY, quantity=qty,
-        order_type=order_type, price=price, current_price=current_price,
+        symbol=symbol,
+        side=OrderSide.BUY,
+        quantity=qty,
+        order_type=order_type,
+        price=price,
+        current_price=current_price,
     )
 
     if result.status.value == "FILLED":
-        console.print(f"[green]✓ BUY FILLED[/green] {symbol} × {qty} @ ¥{result.filled_price:.2f}")
-        console.print(f"  Commission: ¥{result.commission:.2f} | Cash remaining: ¥{trader.account.cash:,.2f}")
+        console.print(
+            f"[green]✓ BUY FILLED[/green] {symbol} × {qty} @ ¥{result.filled_price:.2f}"
+        )
+        console.print(
+            f"  Commission: ¥{result.commission:.2f} | Cash remaining: ¥{trader.account.cash:,.2f}"
+        )
     elif result.status.value == "REJECTED":
         console.print(f"[red]✗ REJECTED:[/red] {result.message}")
     else:
-        console.print(f"[yellow]⏳ {result.status.value}[/yellow] Order {result.id} placed.")
+        console.print(
+            f"[yellow]⏳ {result.status.value}[/yellow] Order {result.id} placed."
+        )
 
 
 @order.command("sell")
 @click.argument("symbol")
-@click.option("--qty", "-q", type=int, default=0, help="Shares to sell (0 = close entire position).")
+@click.option(
+    "--qty",
+    "-q",
+    type=int,
+    default=0,
+    help="Shares to sell (0 = close entire position).",
+)
 @click.option("--price", "-p", type=float, default=None, help="Limit price.")
 def order_sell(symbol: str, qty: int, price: float | None):
     """Place a sell order.
@@ -129,20 +152,32 @@ def order_sell(symbol: str, qty: int, price: float | None):
         qty = pos.quantity
 
     result = trader.place_order(
-        symbol=symbol, side=OrderSide.SELL, quantity=qty,
+        symbol=symbol,
+        side=OrderSide.SELL,
+        quantity=qty,
         order_type=OrderType.LIMIT if price else OrderType.MARKET,
-        price=price, current_price=current_price,
+        price=price,
+        current_price=current_price,
     )
 
     if result.status.value == "FILLED":
-        console.print(f"[green]✓ SELL FILLED[/green] {symbol} × {qty} @ ¥{result.filled_price:.2f}")
-        console.print(f"  Commission: ¥{result.commission:.2f} | Cash: ¥{trader.account.cash:,.2f}")
+        console.print(
+            f"[green]✓ SELL FILLED[/green] {symbol} × {qty} @ ¥{result.filled_price:.2f}"
+        )
+        console.print(
+            f"  Commission: ¥{result.commission:.2f} | Cash: ¥{trader.account.cash:,.2f}"
+        )
     elif result.status.value == "REJECTED":
         console.print(f"[red]✗ REJECTED:[/red] {result.message}")
 
 
 @order.command("list")
-@click.option("--status", "-s", type=click.Choice(["all", "open", "filled", "cancelled"]), default="all")
+@click.option(
+    "--status",
+    "-s",
+    type=click.Choice(["all", "open", "filled", "cancelled"]),
+    default="all",
+)
 def order_list(status: str):
     """List orders."""
     trader = _get_trader()
@@ -170,11 +205,24 @@ def order_list(status: str):
 
     for o in orders:
         side_c = "green" if o.side == OrderSide.BUY else "red"
-        status_c = {"FILLED": "green", "REJECTED": "red", "CANCELLED": "dim", "PENDING": "yellow"}.get(o.status.value, "white")
-        p = f"¥{o.filled_price:.2f}" if o.filled_price else (f"¥{o.price:.2f}" if o.price else "MKT")
+        status_c = {
+            "FILLED": "green",
+            "REJECTED": "red",
+            "CANCELLED": "dim",
+            "PENDING": "yellow",
+        }.get(o.status.value, "white")
+        p = (
+            f"¥{o.filled_price:.2f}"
+            if o.filled_price
+            else (f"¥{o.price:.2f}" if o.price else "MKT")
+        )
         table.add_row(
-            o.id, o.symbol, f"[{side_c}]{o.side.value}[/{side_c}]",
-            str(o.quantity), p, f"[{status_c}]{o.status.value}[/{status_c}]",
+            o.id,
+            o.symbol,
+            f"[{side_c}]{o.side.value}[/{side_c}]",
+            str(o.quantity),
+            p,
+            f"[{status_c}]{o.status.value}[/{status_c}]",
             o.created_at.strftime("%H:%M:%S"),
         )
     console.print(table)
@@ -192,6 +240,7 @@ def order_cancel(order_id: str):
 
 
 # ---- position sub-group ----
+
 
 @trade.group()
 def position():
@@ -221,7 +270,10 @@ def position_list():
     for sym, p in positions.items():
         c = "green" if p.unrealized_pnl >= 0 else "red"
         table.add_row(
-            sym, f"{p.quantity:,}", f"¥{p.avg_cost:.2f}", f"¥{p.current_price:.2f}",
+            sym,
+            f"{p.quantity:,}",
+            f"¥{p.avg_cost:.2f}",
+            f"¥{p.current_price:.2f}",
             f"¥{p.market_value:,.2f}",
             f"[{c}]¥{p.unrealized_pnl:,.2f}[/{c}]",
             f"[{c}]{p.unrealized_pnl_pct:+.2f}%[/{c}]",
@@ -243,12 +295,15 @@ def position_close(symbol: str):
     if order is None:
         console.print(f"[yellow]No position in {symbol}.[/yellow]")
     elif order.status.value == "FILLED":
-        console.print(f"[green]✓ Position closed[/green] {symbol} × {order.filled_quantity} @ ¥{order.filled_price:.2f}")
+        console.print(
+            f"[green]✓ Position closed[/green] {symbol} × {order.filled_quantity} @ ¥{order.filled_price:.2f}"
+        )
     else:
         console.print(f"[red]Close failed:[/red] {order.message}")
 
 
 # ---- account ----
+
 
 @trade.command()
 def account():
@@ -265,16 +320,21 @@ def account():
     info.add_row("Cash", f"¥{a.cash:,.2f}")
     info.add_row("Market Value", f"¥{a.total_market_value:,.2f}")
     info.add_row("Total Equity", f"[bold]¥{a.total_equity:,.2f}[/bold]")
-    info.add_row("P&L", f"[{pnl_c}]¥{a.total_pnl:,.2f} ({a.total_pnl_pct:+.2f}%)[/{pnl_c}]")
+    info.add_row(
+        "P&L", f"[{pnl_c}]¥{a.total_pnl:,.2f} ({a.total_pnl_pct:+.2f}%)[/{pnl_c}]"
+    )
     info.add_row("Open Positions", str(a.position_count))
     info.add_row("Total Orders", str(len(a.orders)))
 
     console.print()
-    console.print(Panel(info, title="[bold]Paper Trading Account[/bold]", border_style="blue"))
+    console.print(
+        Panel(info, title="[bold]Paper Trading Account[/bold]", border_style="blue")
+    )
     console.print()
 
 
 # ---- risk ----
+
 
 @trade.command()
 def risk():
@@ -291,8 +351,10 @@ def risk():
 
     # Show risk limits
     rc = trader.risk_engine.config
-    console.print(f"\n[dim]Risk limits: max position {rc.max_position_pct:.0%} | "
-                  f"max positions {rc.max_positions} | "
-                  f"stop loss {rc.max_single_loss_pct}% | "
-                  f"daily loss limit {rc.max_daily_loss_pct}% | "
-                  f"cash reserve {rc.min_cash_reserve_pct:.0%}[/dim]")
+    console.print(
+        f"\n[dim]Risk limits: max position {rc.max_position_pct:.0%} | "
+        f"max positions {rc.max_positions} | "
+        f"stop loss {rc.max_single_loss_pct}% | "
+        f"daily loss limit {rc.max_daily_loss_pct}% | "
+        f"cash reserve {rc.min_cash_reserve_pct:.0%}[/dim]"
+    )

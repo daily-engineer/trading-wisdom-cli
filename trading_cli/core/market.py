@@ -27,13 +27,13 @@ class TradingSession:
 class MarketInfo:
     """Static metadata about a market."""
 
-    code: str               # CN, HK, US
+    code: str  # CN, HK, US
     name: str
     currency: Currency
     timezone_offset: float  # hours from UTC
     sessions: tuple[TradingSession, ...]
-    lot_size: int           # minimum trade unit
-    tick_size: float        # minimum price movement
+    lot_size: int  # minimum trade unit
+    tick_size: float  # minimum price movement
     exchange_names: tuple[str, ...]  # e.g. ("SSE", "SZSE")
 
     @property
@@ -48,32 +48,39 @@ class MarketInfo:
 
 MARKETS: dict[str, MarketInfo] = {
     "CN": MarketInfo(
-        code="CN", name="China A-Shares", currency=Currency.CNY,
+        code="CN",
+        name="China A-Shares",
+        currency=Currency.CNY,
         timezone_offset=8,
         sessions=(
             TradingSession(time(9, 30), time(11, 30), "Morning"),
             TradingSession(time(13, 0), time(15, 0), "Afternoon"),
         ),
-        lot_size=100, tick_size=0.01,
+        lot_size=100,
+        tick_size=0.01,
         exchange_names=("SSE", "SZSE"),
     ),
     "HK": MarketInfo(
-        code="HK", name="Hong Kong", currency=Currency.HKD,
+        code="HK",
+        name="Hong Kong",
+        currency=Currency.HKD,
         timezone_offset=8,
         sessions=(
             TradingSession(time(9, 30), time(12, 0), "Morning"),
             TradingSession(time(13, 0), time(16, 0), "Afternoon"),
         ),
-        lot_size=1, tick_size=0.01,
+        lot_size=1,
+        tick_size=0.01,
         exchange_names=("HKEX",),
     ),
     "US": MarketInfo(
-        code="US", name="United States", currency=Currency.USD,
+        code="US",
+        name="United States",
+        currency=Currency.USD,
         timezone_offset=-4,  # EDT
-        sessions=(
-            TradingSession(time(9, 30), time(16, 0), "Regular"),
-        ),
-        lot_size=1, tick_size=0.01,
+        sessions=(TradingSession(time(9, 30), time(16, 0), "Regular"),),
+        lot_size=1,
+        tick_size=0.01,
         exchange_names=("NYSE", "NASDAQ", "AMEX"),
     ),
 }
@@ -133,6 +140,7 @@ def convert_currency(amount: float, from_ccy: str, to_ccy: str) -> float:
 # ---------------------------------------------------------------------------
 # Symbol normalization
 # ---------------------------------------------------------------------------
+
 
 def normalize_symbol(symbol: str, market: str) -> str:
     """Normalize a symbol to its canonical form for a given market."""

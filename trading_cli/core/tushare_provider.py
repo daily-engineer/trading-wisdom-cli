@@ -92,9 +92,7 @@ class TushareProvider:
                     "end_date": date.today().strftime("%Y%m%d"),
                 },
             }
-            resp = requests.post(
-                self._config.api_url, json=params, timeout=10
-            )
+            resp = requests.post(self._config.api_url, json=params, timeout=10)
             return resp.status_code == 200 and resp.json().get("code") == 0
         except (requests.RequestException, KeyError):
             return False

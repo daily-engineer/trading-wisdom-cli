@@ -29,8 +29,14 @@ def report():
 
 
 @report.command()
-@click.option("--file", "-f", "portfolio_file", type=click.Path(exists=True), default=None,
-              help="Portfolio JSON file path.")
+@click.option(
+    "--file",
+    "-f",
+    "portfolio_file",
+    type=click.Path(exists=True),
+    default=None,
+    help="Portfolio JSON file path.",
+)
 def portfolio(portfolio_file: str | None):
     """Display portfolio summary report.
 
@@ -50,9 +56,24 @@ def portfolio(portfolio_file: str | None):
         summary = PortfolioSummary(
             cash=50000,
             positions=[
-                PortfolioPosition(symbol="000001.SZ", quantity=1000, avg_cost=10.50, current_price=11.12),
-                PortfolioPosition(symbol="600519.SH", quantity=100, avg_cost=1680.00, current_price=1720.50),
-                PortfolioPosition(symbol="000858.SZ", quantity=500, avg_cost=135.20, current_price=128.80),
+                PortfolioPosition(
+                    symbol="000001.SZ",
+                    quantity=1000,
+                    avg_cost=10.50,
+                    current_price=11.12,
+                ),
+                PortfolioPosition(
+                    symbol="600519.SH",
+                    quantity=100,
+                    avg_cost=1680.00,
+                    current_price=1720.50,
+                ),
+                PortfolioPosition(
+                    symbol="000858.SZ",
+                    quantity=500,
+                    avg_cost=135.20,
+                    current_price=128.80,
+                ),
             ],
         )
 
@@ -66,11 +87,16 @@ def portfolio(portfolio_file: str | None):
     header.add_row("Total Equity", f"¥{summary.total_equity:,.2f}")
     header.add_row("Market Value", f"¥{summary.total_market_value:,.2f}")
     header.add_row("Cash", f"¥{summary.cash:,.2f}")
-    header.add_row("Total P&L", f"[{pnl_color}]¥{summary.total_pnl:,.2f} ({summary.total_pnl_pct:+.2f}%)[/{pnl_color}]")
+    header.add_row(
+        "Total P&L",
+        f"[{pnl_color}]¥{summary.total_pnl:,.2f} ({summary.total_pnl_pct:+.2f}%)[/{pnl_color}]",
+    )
     header.add_row("Positions", f"{summary.position_count}")
 
     console.print()
-    console.print(Panel(header, title="[bold]Portfolio Summary[/bold]", border_style="blue"))
+    console.print(
+        Panel(header, title="[bold]Portfolio Summary[/bold]", border_style="blue")
+    )
 
     # Positions table
     table = Table(title="Positions", show_lines=True)
@@ -99,8 +125,14 @@ def portfolio(portfolio_file: str | None):
 
 
 @report.command()
-@click.option("--file", "-f", "perf_file", type=click.Path(exists=True), default=None,
-              help="Performance metrics JSON file.")
+@click.option(
+    "--file",
+    "-f",
+    "perf_file",
+    type=click.Path(exists=True),
+    default=None,
+    help="Performance metrics JSON file.",
+)
 def performance(perf_file: str | None):
     """Display performance report.
 
@@ -149,7 +181,9 @@ def performance(perf_file: str | None):
                 winning_trades=winning,
                 losing_trades=total_trades - winning,
                 total_pnl=sum(r.get("total_pnl", 0) for r in results),
-                max_drawdown=max((r.get("max_drawdown", 0) for r in results), default=0),
+                max_drawdown=max(
+                    (r.get("max_drawdown", 0) for r in results), default=0
+                ),
                 sharpe_ratio=results[0].get("sharpe_ratio", 0) if results else 0,
                 win_rate=(winning / total_trades * 100) if total_trades else 0,
             )
@@ -176,20 +210,40 @@ def performance(perf_file: str | None):
     table.add_row("Sharpe Ratio", f"{metrics.sharpe_ratio:.2f}")
 
     console.print()
-    console.print(Panel(table, title="[bold]Performance Report[/bold]", border_style="blue"))
+    console.print(
+        Panel(table, title="[bold]Performance Report[/bold]", border_style="blue")
+    )
     console.print()
 
 
 @report.command()
-@click.option("--format", "-f", "fmt", type=click.Choice(["json", "csv"]), default="json", help="Export format.")
-@click.option("--type", "-t", "report_type", type=click.Choice(["portfolio", "performance"]), default="portfolio")
+@click.option(
+    "--format",
+    "-f",
+    "fmt",
+    type=click.Choice(["json", "csv"]),
+    default="json",
+    help="Export format.",
+)
+@click.option(
+    "--type",
+    "-t",
+    "report_type",
+    type=click.Choice(["portfolio", "performance"]),
+    default="portfolio",
+)
 def export(fmt: str, report_type: str):
     """Export report to file."""
     if report_type == "portfolio":
         summary = PortfolioSummary(
             cash=50000,
             positions=[
-                PortfolioPosition(symbol="000001.SZ", quantity=1000, avg_cost=10.50, current_price=11.12),
+                PortfolioPosition(
+                    symbol="000001.SZ",
+                    quantity=1000,
+                    avg_cost=10.50,
+                    current_price=11.12,
+                ),
             ],
         )
         data = _generator.generate_portfolio_report(summary)

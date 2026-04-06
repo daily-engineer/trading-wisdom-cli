@@ -87,7 +87,9 @@ def dashboard(symbols: tuple[str, ...]):
         content.add_row("Volume", f"{snap.vol:,.0f}")
 
         border_color = "green" if snap.change_pct >= 0 else "red"
-        panels.append(Panel(content, title=f"[bold]{sym}[/bold]", border_style=border_color))
+        panels.append(
+            Panel(content, title=f"[bold]{sym}[/bold]", border_style=border_color)
+        )
 
     console.print()
     console.print(Columns(panels, equal=True, expand=True))
@@ -96,7 +98,9 @@ def dashboard(symbols: tuple[str, ...]):
 
 @monitor.command()
 @click.argument("symbols", nargs=-1, required=True)
-@click.option("--days", "-d", type=int, default=60, help="Lookback days for indicators.")
+@click.option(
+    "--days", "-d", type=int, default=60, help="Lookback days for indicators."
+)
 def watch(symbols: tuple[str, ...], days: int):
     """Watch multiple symbols with key indicators.
 
@@ -137,7 +141,9 @@ def watch(symbols: tuple[str, ...], days: int):
 
         df = result.data
         last = df.iloc[-1]
-        prev_close = float(df.iloc[-2]["close"]) if len(df) > 1 else float(last["close"])
+        prev_close = (
+            float(df.iloc[-2]["close"]) if len(df) > 1 else float(last["close"])
+        )
         close = float(last["close"])
         change_pct = (close - prev_close) / prev_close * 100
 
@@ -185,7 +191,8 @@ def alert():
 @alert.command("add")
 @click.argument("symbol")
 @click.option(
-    "--condition", "-c",
+    "--condition",
+    "-c",
     type=click.Choice([c.value for c in AlertCondition], case_sensitive=False),
     required=True,
     help="Alert condition type.",
@@ -201,8 +208,12 @@ def alert_add(symbol: str, condition: str, threshold: float, message: str):
 
         trading-cli monitor alert add 600519.SH -c rsi_below -t 30
     """
-    rule = _alert_manager.add_rule(symbol, AlertCondition(condition), threshold, message)
-    console.print(f"[green]✓[/green] Alert created: [cyan]{rule.id}[/cyan] — {rule.message}")
+    rule = _alert_manager.add_rule(
+        symbol, AlertCondition(condition), threshold, message
+    )
+    console.print(
+        f"[green]✓[/green] Alert created: [cyan]{rule.id}[/cyan] — {rule.message}"
+    )
 
 
 @alert.command("list")
@@ -266,6 +277,8 @@ def alert_check(symbols: tuple[str, ...]):
         triggered = _alert_manager.check_all(sym, market_data)
         if triggered:
             for rule in triggered:
-                console.print(f"[red bold]🔔 ALERT:[/red bold] {rule.message} (current: {market_data.get('close', 'N/A')})")
+                console.print(
+                    f"[red bold]🔔 ALERT:[/red bold] {rule.message} (current: {market_data.get('close', 'N/A')})"
+                )
         else:
             console.print(f"[dim]{sym}: no alerts triggered[/dim]")

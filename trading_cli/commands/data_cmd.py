@@ -38,12 +38,30 @@ def data():
     default="CN",
     help="Target market (default: CN).",
 )
-@click.option("--start", "-s", type=click.DateTime(formats=["%Y-%m-%d"]), default=None, help="Start date (YYYY-MM-DD).")
-@click.option("--end", "-e", type=click.DateTime(formats=["%Y-%m-%d"]), default=None, help="End date (YYYY-MM-DD).")
-@click.option("--days", "-d", type=int, default=30, help="Number of recent days (default: 30).")
+@click.option(
+    "--start",
+    "-s",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=None,
+    help="Start date (YYYY-MM-DD).",
+)
+@click.option(
+    "--end",
+    "-e",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=None,
+    help="End date (YYYY-MM-DD).",
+)
+@click.option(
+    "--days", "-d", type=int, default=30, help="Number of recent days (default: 30)."
+)
 @click.option("--provider", "-p", default=None, help="Data provider name.")
-@click.option("--limit", "-l", type=int, default=20, help="Max rows to display (default: 20).")
-def fetch(symbol: str, market: str, start, end, days: int, provider: str | None, limit: int):
+@click.option(
+    "--limit", "-l", type=int, default=20, help="Max rows to display (default: 20)."
+)
+def fetch(
+    symbol: str, market: str, start, end, days: int, provider: str | None, limit: int
+):
     """Fetch stock market data.
 
     Examples:
@@ -132,7 +150,9 @@ def sources():
         dp = registry.get(name)
         markets = ", ".join(m.value for m in dp.supported_markets)
         connected = dp.check_connection()
-        status = "[green]✓ Connected[/green]" if connected else "[red]✗ Not connected[/red]"
+        status = (
+            "[green]✓ Connected[/green]" if connected else "[red]✗ Not connected[/red]"
+        )
         table.add_row(name, markets, status)
 
     console.print(table)
@@ -151,8 +171,12 @@ def validate(symbol: str):
         try:
             result = dp.fetch_stock_daily(request)
             if result.is_empty:
-                console.print(f"[yellow]⚠ {symbol}: no data found (may be invalid).[/yellow]")
+                console.print(
+                    f"[yellow]⚠ {symbol}: no data found (may be invalid).[/yellow]"
+                )
             else:
-                console.print(f"[green]✓ {symbol}: valid ({result.row_count} records available).[/green]")
+                console.print(
+                    f"[green]✓ {symbol}: valid ({result.row_count} records available).[/green]"
+                )
         except Exception as e:
             console.print(f"[red]✗ {symbol}: validation failed — {e}[/red]")

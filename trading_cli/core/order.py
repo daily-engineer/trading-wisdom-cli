@@ -37,8 +37,8 @@ class Order(BaseModel):
     side: OrderSide
     order_type: OrderType = OrderType.MARKET
     quantity: int
-    price: Optional[float] = None          # limit / stop-limit price
-    stop_price: Optional[float] = None     # stop trigger price
+    price: Optional[float] = None  # limit / stop-limit price
+    stop_price: Optional[float] = None  # stop trigger price
     status: OrderStatus = OrderStatus.PENDING
     filled_quantity: int = 0
     filled_price: float = 0.0
@@ -99,7 +99,11 @@ class Account(BaseModel):
 
     @property
     def total_pnl_pct(self) -> float:
-        return (self.total_pnl / self.initial_capital * 100) if self.initial_capital else 0.0
+        return (
+            (self.total_pnl / self.initial_capital * 100)
+            if self.initial_capital
+            else 0.0
+        )
 
     @property
     def position_count(self) -> int:

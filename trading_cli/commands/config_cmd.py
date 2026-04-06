@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import click
 from rich.console import Console
 from rich.syntax import Syntax
@@ -66,16 +68,21 @@ def set(key: str, value: str):
 
     # Type coercion
     old_value = target[last_key]
+    coerced_value: Any
     if isinstance(old_value, bool):
-        value = value.lower() in ("true", "1", "yes")
+        coerced_value = value.lower() in ("true", "1", "yes")
     elif isinstance(old_value, int):
-        value = int(value)
+        coerced_value = int(value)
+    else:
+        coerced_value = value
 
-    target[last_key] = value
+    target[last_key] = coerced_value
 
     new_cfg = AppConfig.model_validate(data)
     saved_path = new_cfg.save()
-    console.print(f"[green]✓[/green] Set [cyan]{key}[/cyan] = [yellow]{value}[/yellow]")
+    console.print(
+        f"[green]✓[/green] Set [cyan]{key}[/cyan] = [yellow]{coerced_value}[/yellow]"
+    )
     console.print(f"[dim]Saved to {saved_path}[/dim]")
 
 
@@ -83,14 +90,20 @@ def set(key: str, value: str):
 def init():
     """Initialize default configuration file."""
     if DEFAULT_CONFIG_FILE.exists():
-        if not click.confirm(f"Config file already exists at {DEFAULT_CONFIG_FILE}. Overwrite?"):
+        if not click.confirm(
+            f"Config file already exists at {DEFAULT_CONFIG_FILE}. Overwrite?"
+        ):
             console.print("[yellow]Cancelled.[/yellow]")
             return
 
     cfg = AppConfig()
     saved_path = cfg.save()
-    console.print(f"[green]✓[/green] Default config created at [cyan]{saved_path}[/cyan]")
-    console.print("[dim]Edit this file or use 'trading-cli config set' to configure.[/dim]")
+    console.print(
+        f"[green]✓[/green] Default config created at [cyan]{saved_path}[/cyan]"
+    )
+    console.print(
+        "[dim]Edit this file or use 'trading-cli config set' to configure.[/dim]"
+    )
 
 
 @config.command()

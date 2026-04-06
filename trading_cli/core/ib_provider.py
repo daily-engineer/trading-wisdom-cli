@@ -16,7 +16,11 @@ import numpy as np
 import pandas as pd
 
 from trading_cli.core.data_source import (
-    DataFetchRequest, DataFetchResult, DataFrequency, DataProvider, Market,
+    DataFetchRequest,
+    DataFetchResult,
+    DataFrequency,
+    DataProvider,
+    Market,
 )
 from trading_cli.core.market import detect_market, normalize_symbol
 
@@ -24,8 +28,13 @@ from trading_cli.core.market import detect_market, normalize_symbol
 class IBProvider:
     """Interactive Brokers data provider with live and simulated modes."""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 7497,
-                 client_id: int = 1, simulated: bool = True):
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 7497,
+        client_id: int = 1,
+        simulated: bool = True,
+    ):
         self._host = host
         self._port = port
         self._client_id = client_id
@@ -76,17 +85,31 @@ class IBProvider:
         n = len(all_days)
         if n == 0:
             return DataFetchResult(
-                symbol=symbol, provider=self.name, market=market,
-                frequency=DataFrequency.DAILY, row_count=0,
-                columns=[], data=pd.DataFrame(),
+                symbol=symbol,
+                provider=self.name,
+                market=market,
+                frequency=DataFrequency.DAILY,
+                row_count=0,
+                columns=[],
+                data=pd.DataFrame(),
             )
 
         # Price simulation: geometric Brownian motion
         base_prices = {
-            "AAPL": 185.0, "MSFT": 420.0, "GOOGL": 175.0, "AMZN": 185.0,
-            "TSLA": 250.0, "SPY": 530.0, "QQQ": 450.0, "META": 500.0,
-            "NVDA": 900.0, "0700.HK": 380.0, "9988.HK": 85.0,
-            "1810.HK": 17.0, "2318.HK": 45.0, "0005.HK": 60.0,
+            "AAPL": 185.0,
+            "MSFT": 420.0,
+            "GOOGL": 175.0,
+            "AMZN": 185.0,
+            "TSLA": 250.0,
+            "SPY": 530.0,
+            "QQQ": 450.0,
+            "META": 500.0,
+            "NVDA": 900.0,
+            "0700.HK": 380.0,
+            "9988.HK": 85.0,
+            "1810.HK": 17.0,
+            "2318.HK": 45.0,
+            "0005.HK": 60.0,
         }
         clean_sym = symbol.split(".")[0] if "." in symbol else symbol
         base = base_prices.get(symbol, base_prices.get(clean_sym, 100.0))
@@ -98,24 +121,30 @@ class IBProvider:
         low_noise = np.abs(rng.normal(0, 0.008, n))
         open_noise = rng.normal(0, 0.003, n)
 
-        df = pd.DataFrame({
-            "trade_date": all_days,
-            "open": np.round(prices * (1 + open_noise), 2),
-            "high": np.round(prices * (1 + high_noise), 2),
-            "low": np.round(prices * (1 - low_noise), 2),
-            "close": np.round(prices, 2),
-            "vol": (rng.lognormal(15, 0.8, n)).astype(int),
-            "amount": np.round(prices * rng.lognormal(15, 0.8, n), 0),
-        })
+        df = pd.DataFrame(
+            {
+                "trade_date": all_days,
+                "open": np.round(prices * (1 + open_noise), 2),
+                "high": np.round(prices * (1 + high_noise), 2),
+                "low": np.round(prices * (1 - low_noise), 2),
+                "close": np.round(prices, 2),
+                "vol": (rng.lognormal(15, 0.8, n)).astype(int),
+                "amount": np.round(prices * rng.lognormal(15, 0.8, n), 0),
+            }
+        )
 
         # Ensure OHLC consistency
         df["high"] = df[["open", "high", "close"]].max(axis=1)
         df["low"] = df[["open", "low", "close"]].min(axis=1)
 
         return DataFetchResult(
-            symbol=symbol, provider=self.name, market=market,
-            frequency=request.frequency, row_count=len(df),
-            columns=list(df.columns), data=df,
+            symbol=symbol,
+            provider=self.name,
+            market=market,
+            frequency=request.frequency,
+            row_count=len(df),
+            columns=list(df.columns),
+            data=df,
             fetched_at=datetime.now(),
         )
 
@@ -128,6 +157,7 @@ class IBProvider:
         if self._ib is None:
             try:
                 from ib_insync import IB
+
                 self._ib = IB()
                 self._ib.connect(self._host, self._port, clientId=self._client_id)
             except ImportError:
@@ -165,9 +195,12 @@ class IBProvider:
         duration = f"{(end - start).days} D"
 
         bars = ib.reqHistoricalData(
-            contract, endDateTime=end.strftime("%Y%m%d 23:59:59"),
-            durationStr=duration, barSizeSetting="1 day",
-            whatToShow="TRADES", useRTH=True,
+            contract,
+            endDateTime=end.strftime("%Y%m%d 23:59:59"),
+            durationStr=duration,
+            barSizeSetting="1 day",
+            whatToShow="TRADES",
+            useRTH=True,
         )
 
         df = util.df(bars) if bars else pd.DataFrame()
@@ -179,9 +212,13 @@ class IBProvider:
 
         market = Market.HK if mkt == "HK" else Market.US
         return DataFetchResult(
-            symbol=symbol, provider=self.name, market=market,
-            frequency=DataFrequency.DAILY, row_count=len(df),
-            columns=list(df.columns), data=df,
+            symbol=symbol,
+            provider=self.name,
+            market=market,
+            frequency=DataFrequency.DAILY,
+            row_count=len(df),
+            columns=list(df.columns),
+            data=df,
             fetched_at=datetime.now(),
         )
 

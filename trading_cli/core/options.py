@@ -10,10 +10,10 @@ from typing import Optional
 import numpy as np
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # Standard normal helpers
 # ---------------------------------------------------------------------------
+
 
 def _norm_cdf(x: float) -> float:
     """Standard normal cumulative distribution function."""
@@ -29,6 +29,7 @@ def _norm_pdf(x: float) -> float:
 # Enums & models
 # ---------------------------------------------------------------------------
 
+
 class OptionType(str, Enum):
     CALL = "CALL"
     PUT = "PUT"
@@ -37,7 +38,7 @@ class OptionType(str, Enum):
 class OptionContract(BaseModel):
     """A single option contract."""
 
-    symbol: str                              # e.g. "000001.SZ"
+    symbol: str  # e.g. "000001.SZ"
     option_type: OptionType
     strike: float
     expiry: date
@@ -68,9 +69,9 @@ class Greeks(BaseModel):
 
     delta: float = 0.0
     gamma: float = 0.0
-    theta: float = 0.0     # per day
-    vega: float = 0.0      # per 1% vol move
-    rho: float = 0.0       # per 1% rate move
+    theta: float = 0.0  # per day
+    vega: float = 0.0  # per 1% vol move
+    rho: float = 0.0  # per 1% rate move
 
 
 class OptionPricingResult(BaseModel):
@@ -81,7 +82,7 @@ class OptionPricingResult(BaseModel):
     time_value: float
     greeks: Greeks
     implied_vol: float = 0.0
-    moneyness: str = ""     # ITM / ATM / OTM
+    moneyness: str = ""  # ITM / ATM / OTM
 
 
 class OptionChain(BaseModel):
@@ -109,16 +110,17 @@ class OptionChain(BaseModel):
 # Black-Scholes pricing engine
 # ---------------------------------------------------------------------------
 
+
 class BlackScholes:
     """Black-Scholes-Merton option pricing model."""
 
     @staticmethod
     def price(
-        S: float,          # underlying price
-        K: float,          # strike price
-        T: float,          # time to expiry (years)
-        r: float,          # risk-free rate
-        sigma: float,      # volatility
+        S: float,  # underlying price
+        K: float,  # strike price
+        T: float,  # time to expiry (years)
+        r: float,  # risk-free rate
+        sigma: float,  # volatility
         option_type: OptionType = OptionType.CALL,
     ) -> float:
         """Calculate theoretical option price."""
@@ -137,14 +139,21 @@ class BlackScholes:
 
     @staticmethod
     def greeks(
-        S: float, K: float, T: float, r: float, sigma: float,
+        S: float,
+        K: float,
+        T: float,
+        r: float,
+        sigma: float,
         option_type: OptionType = OptionType.CALL,
     ) -> Greeks:
         """Calculate all Greeks."""
         if T <= 0 or sigma <= 0:
             intrinsic_call = max(S - K, 0)
-            delta = 1.0 if (option_type == OptionType.CALL and S > K) else (
-                -1.0 if (option_type == OptionType.PUT and S < K) else 0.0)
+            delta = (
+                1.0
+                if (option_type == OptionType.CALL and S > K)
+                else (-1.0 if (option_type == OptionType.PUT and S < K) else 0.0)
+            )
             return Greeks(delta=delta)
 
         d1, d2 = BlackScholes._d1d2(S, K, T, r, sigma)
@@ -182,7 +191,10 @@ class BlackScholes:
     @staticmethod
     def implied_volatility(
         market_price: float,
-        S: float, K: float, T: float, r: float,
+        S: float,
+        K: float,
+        T: float,
+        r: float,
         option_type: OptionType = OptionType.CALL,
         max_iter: int = 100,
         tol: float = 1e-6,
@@ -212,7 +224,11 @@ class BlackScholes:
 
     @staticmethod
     def full_pricing(
-        S: float, K: float, T: float, r: float, sigma: float,
+        S: float,
+        K: float,
+        T: float,
+        r: float,
+        sigma: float,
         option_type: OptionType = OptionType.CALL,
     ) -> OptionPricingResult:
         """Complete pricing: price + greeks + moneyness."""
@@ -244,7 +260,9 @@ class BlackScholes:
     # --- internals ---
 
     @staticmethod
-    def _d1d2(S: float, K: float, T: float, r: float, sigma: float) -> tuple[float, float]:
+    def _d1d2(
+        S: float, K: float, T: float, r: float, sigma: float
+    ) -> tuple[float, float]:
         sqrt_T = math.sqrt(T)
         d1 = (math.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * sqrt_T)
         d2 = d1 - sigma * sqrt_T
@@ -262,6 +280,7 @@ class BlackScholes:
 # ---------------------------------------------------------------------------
 # Synthetic option chain generator (for demo / testing)
 # ---------------------------------------------------------------------------
+
 
 def generate_option_chain(
     underlying_symbol: str,
@@ -294,27 +313,37 @@ def generate_option_chain(
 
         spread = max(call_price * 0.05, 0.01)
 
-        calls.append(OptionContract(
-            symbol=underlying_symbol, option_type=OptionType.CALL,
-            strike=K, expiry=expiry, underlying_price=underlying_price,
-            bid=round(max(call_price - spread, 0.01), 4),
-            ask=round(call_price + spread, 4),
-            last_price=round(call_price, 4),
-            volume=int(1000 * (1 + moneyness_ratio * 2)),
-            open_interest=int(5000 * (1 + moneyness_ratio)),
-            implied_vol=round(vol, 4),
-        ))
+        calls.append(
+            OptionContract(
+                symbol=underlying_symbol,
+                option_type=OptionType.CALL,
+                strike=K,
+                expiry=expiry,
+                underlying_price=underlying_price,
+                bid=round(max(call_price - spread, 0.01), 4),
+                ask=round(call_price + spread, 4),
+                last_price=round(call_price, 4),
+                volume=int(1000 * (1 + moneyness_ratio * 2)),
+                open_interest=int(5000 * (1 + moneyness_ratio)),
+                implied_vol=round(vol, 4),
+            )
+        )
 
-        puts.append(OptionContract(
-            symbol=underlying_symbol, option_type=OptionType.PUT,
-            strike=K, expiry=expiry, underlying_price=underlying_price,
-            bid=round(max(put_price - spread, 0.01), 4),
-            ask=round(put_price + spread, 4),
-            last_price=round(put_price, 4),
-            volume=int(800 * (1 + moneyness_ratio * 2)),
-            open_interest=int(4000 * (1 + moneyness_ratio)),
-            implied_vol=round(vol, 4),
-        ))
+        puts.append(
+            OptionContract(
+                symbol=underlying_symbol,
+                option_type=OptionType.PUT,
+                strike=K,
+                expiry=expiry,
+                underlying_price=underlying_price,
+                bid=round(max(put_price - spread, 0.01), 4),
+                ask=round(put_price + spread, 4),
+                last_price=round(put_price, 4),
+                volume=int(800 * (1 + moneyness_ratio * 2)),
+                open_interest=int(4000 * (1 + moneyness_ratio)),
+                implied_vol=round(vol, 4),
+            )
+        )
 
     return OptionChain(
         underlying_symbol=underlying_symbol,

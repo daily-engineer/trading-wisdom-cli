@@ -17,8 +17,8 @@ class OptionLeg:
 
     option_type: OptionType
     strike: float
-    side: int              # +1 = long, -1 = short (written)
-    premium: float         # per-unit premium paid (+) or received (-)
+    side: int  # +1 = long, -1 = short (written)
+    premium: float  # per-unit premium paid (+) or received (-)
     quantity: int = 1
 
 
@@ -29,7 +29,7 @@ class StrategyPayoff:
     name: str
     legs: list[OptionLeg]
     underlying_price: float
-    net_premium: float          # total net premium (negative = net credit)
+    net_premium: float  # total net premium (negative = net credit)
     max_profit: float
     max_loss: float
     break_evens: list[float]
@@ -38,7 +38,9 @@ class StrategyPayoff:
 
     @property
     def risk_reward_ratio(self) -> float:
-        return abs(self.max_profit / self.max_loss) if self.max_loss != 0 else float("inf")
+        return (
+            abs(self.max_profit / self.max_loss) if self.max_loss != 0 else float("inf")
+        )
 
 
 def _payoff_at_expiry(legs: list[OptionLeg], price: float) -> float:
@@ -91,12 +93,15 @@ def _analyze_payoff(
 # Pre-built strategy constructors
 # ---------------------------------------------------------------------------
 
+
 def covered_call(
     underlying_price: float, call_strike: float, call_premium: float
 ) -> StrategyPayoff:
     """Covered call: long stock + short call."""
     legs = [
-        OptionLeg(OptionType.CALL, strike=0, side=+1, premium=underlying_price),  # proxy for stock
+        OptionLeg(
+            OptionType.CALL, strike=0, side=+1, premium=underlying_price
+        ),  # proxy for stock
         OptionLeg(OptionType.CALL, strike=call_strike, side=-1, premium=call_premium),
     ]
     # For covered call, adjust payoff manually
@@ -113,12 +118,14 @@ def covered_call(
 
     return StrategyPayoff(
         name="Covered Call",
-        legs=legs, underlying_price=underlying_price,
+        legs=legs,
+        underlying_price=underlying_price,
         net_premium=round(-call_premium, 4),
         max_profit=round(max_profit, 4),
         max_loss=round(max_loss, 4),
         break_evens=[round(be, 4)],
-        prices=prices, payoffs=payoffs,
+        prices=prices,
+        payoffs=payoffs,
     )
 
 
@@ -147,14 +154,17 @@ def protective_put(
         max_profit=round(max(payoffs), 4),
         max_loss=round(max_loss, 4),
         break_evens=[round(be, 4)],
-        prices=prices, payoffs=payoffs,
+        prices=prices,
+        payoffs=payoffs,
     )
 
 
 def bull_call_spread(
     underlying_price: float,
-    long_strike: float, long_premium: float,
-    short_strike: float, short_premium: float,
+    long_strike: float,
+    long_premium: float,
+    short_strike: float,
+    short_premium: float,
 ) -> StrategyPayoff:
     """Bull call spread: long lower call + short higher call."""
     legs = [
@@ -166,8 +176,10 @@ def bull_call_spread(
 
 def bear_put_spread(
     underlying_price: float,
-    long_strike: float, long_premium: float,
-    short_strike: float, short_premium: float,
+    long_strike: float,
+    long_premium: float,
+    short_strike: float,
+    short_premium: float,
 ) -> StrategyPayoff:
     """Bear put spread: long higher put + short lower put."""
     legs = [
@@ -179,24 +191,41 @@ def bear_put_spread(
 
 def iron_condor(
     underlying_price: float,
-    put_long_strike: float, put_long_premium: float,
-    put_short_strike: float, put_short_premium: float,
-    call_short_strike: float, call_short_premium: float,
-    call_long_strike: float, call_long_premium: float,
+    put_long_strike: float,
+    put_long_premium: float,
+    put_short_strike: float,
+    put_short_premium: float,
+    call_short_strike: float,
+    call_short_premium: float,
+    call_long_strike: float,
+    call_long_premium: float,
 ) -> StrategyPayoff:
     """Iron condor: bull put spread + bear call spread."""
     legs = [
-        OptionLeg(OptionType.PUT, strike=put_long_strike, side=+1, premium=put_long_premium),
-        OptionLeg(OptionType.PUT, strike=put_short_strike, side=-1, premium=put_short_premium),
-        OptionLeg(OptionType.CALL, strike=call_short_strike, side=-1, premium=call_short_premium),
-        OptionLeg(OptionType.CALL, strike=call_long_strike, side=+1, premium=call_long_premium),
+        OptionLeg(
+            OptionType.PUT, strike=put_long_strike, side=+1, premium=put_long_premium
+        ),
+        OptionLeg(
+            OptionType.PUT, strike=put_short_strike, side=-1, premium=put_short_premium
+        ),
+        OptionLeg(
+            OptionType.CALL,
+            strike=call_short_strike,
+            side=-1,
+            premium=call_short_premium,
+        ),
+        OptionLeg(
+            OptionType.CALL, strike=call_long_strike, side=+1, premium=call_long_premium
+        ),
     ]
     return _analyze_payoff("Iron Condor", legs, underlying_price)
 
 
 def straddle(
     underlying_price: float,
-    strike: float, call_premium: float, put_premium: float,
+    strike: float,
+    call_premium: float,
+    put_premium: float,
     side: int = 1,
 ) -> StrategyPayoff:
     """Long/short straddle: call + put at same strike."""
@@ -211,6 +240,7 @@ def straddle(
 # ---------------------------------------------------------------------------
 # Options strategy backtest (simplified time-decay simulation)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class OptionsBacktestResult:
@@ -244,15 +274,23 @@ def backtest_option_strategy(
         return OptionsBacktestResult(
             strategy_name=strategy_payoff.name,
             underlying_symbol="",
-            entry_price=0, exit_price=0, days_held=0,
-            entry_payoff=0, exit_payoff=0, pnl=0, pnl_pct=0,
-            greeks_at_entry={}, greeks_at_exit={},
+            entry_price=0,
+            exit_price=0,
+            days_held=0,
+            entry_payoff=0,
+            exit_payoff=0,
+            pnl=0,
+            pnl_pct=0,
+            greeks_at_entry={},
+            greeks_at_exit={},
         )
 
     n = len(price_path)
     days_per_step = max(total_days / n, 0.1)
 
-    def _mtm(legs: list[OptionLeg], spot: float, days_remaining: float) -> tuple[float, dict]:
+    def _mtm(
+        legs: list[OptionLeg], spot: float, days_remaining: float
+    ) -> tuple[float, dict]:
         T = max(days_remaining / 365.0, 0.0001)
         total_value = 0.0
         total_delta = 0.0
@@ -268,14 +306,20 @@ def backtest_option_strategy(
             total_value += p * leg.side * leg.quantity
             total_delta += g.delta * leg.side * leg.quantity
             total_theta += g.theta * leg.side * leg.quantity
-        return total_value, {"delta": round(total_delta, 4), "theta": round(total_theta, 4)}
+        return total_value, {
+            "delta": round(total_delta, 4),
+            "theta": round(total_theta, 4),
+        }
 
     entry_value, entry_greeks = _mtm(strategy_payoff.legs, price_path[0], total_days)
-    exit_value, exit_greeks = _mtm(strategy_payoff.legs, price_path[-1],
-                                    max(total_days - n * days_per_step, 0.1))
+    exit_value, exit_greeks = _mtm(
+        strategy_payoff.legs, price_path[-1], max(total_days - n * days_per_step, 0.1)
+    )
 
     # P&L includes premium already baked into mtm
-    entry_cost = sum(leg.premium * leg.side * leg.quantity for leg in strategy_payoff.legs)
+    entry_cost = sum(
+        leg.premium * leg.side * leg.quantity for leg in strategy_payoff.legs
+    )
     pnl = exit_value - entry_value
     pnl_pct = (pnl / abs(entry_cost) * 100) if entry_cost else 0
 

@@ -80,9 +80,15 @@ def grid_search(
         result = engine.run(strategy, data, symbol)
         score = _score_result(result, metric)
 
-        entry = {**params, "score": score, "sharpe": result.sharpe_ratio,
-                 "pnl_pct": result.total_pnl_pct, "win_rate": result.win_rate,
-                 "trades": result.total_trades, "drawdown": result.max_drawdown}
+        entry = {
+            **params,
+            "score": score,
+            "sharpe": result.sharpe_ratio,
+            "pnl_pct": result.total_pnl_pct,
+            "win_rate": result.win_rate,
+            "trades": result.total_trades,
+            "drawdown": result.max_drawdown,
+        }
         all_results.append(entry)
 
         if score > best_score:
@@ -93,7 +99,8 @@ def grid_search(
     return OptimizationResult(
         best_params=best_params,
         best_score=best_score,
-        best_result=best_result or StrategyResult(strategy_name=strategy_cls.__name__, symbol=symbol),
+        best_result=best_result
+        or StrategyResult(strategy_name=strategy_cls.__name__, symbol=symbol),
         all_results=sorted(all_results, key=lambda x: x["score"], reverse=True),
         total_combinations=len(combos),
         method="grid_search",
@@ -103,6 +110,7 @@ def grid_search(
 # ---------------------------------------------------------------------------
 # Genetic algorithm
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class _Individual:
@@ -145,7 +153,9 @@ def genetic_optimize(
         OptimizationResult with best params found.
     """
     rng = random.Random(seed)
-    engine = BacktestEngine(initial_capital=initial_capital, commission_rate=commission_rate)
+    engine = BacktestEngine(
+        initial_capital=initial_capital, commission_rate=commission_rate
+    )
 
     def _random_params() -> dict[str, Any]:
         params: dict[str, Any] = {}
@@ -184,9 +194,13 @@ def genetic_optimize(
             _evaluate(ind)
             entry = {**ind.params, "score": ind.score, "generation": gen}
             if ind.result:
-                entry.update(sharpe=ind.result.sharpe_ratio, pnl_pct=ind.result.total_pnl_pct,
-                             win_rate=ind.result.win_rate, trades=ind.result.total_trades,
-                             drawdown=ind.result.max_drawdown)
+                entry.update(
+                    sharpe=ind.result.sharpe_ratio,
+                    pnl_pct=ind.result.total_pnl_pct,
+                    win_rate=ind.result.win_rate,
+                    trades=ind.result.total_trades,
+                    drawdown=ind.result.max_drawdown,
+                )
             all_results.append(entry)
 
         # sort by fitness
@@ -199,7 +213,13 @@ def genetic_optimize(
         while len(next_gen) < population_size:
             if rng.random() < crossover_rate:
                 # tournament selection (pick best of 3)
-                parents = [max(rng.sample(population, min(3, len(population))), key=lambda x: x.score) for _ in range(2)]
+                parents = [
+                    max(
+                        rng.sample(population, min(3, len(population))),
+                        key=lambda x: x.score,
+                    )
+                    for _ in range(2)
+                ]
                 child = _crossover(parents[0], parents[1])
             else:
                 child = _Individual(params=dict(rng.choice(population[:5]).params))
@@ -216,7 +236,8 @@ def genetic_optimize(
     return OptimizationResult(
         best_params=best.params,
         best_score=best.score,
-        best_result=best.result or StrategyResult(strategy_name=strategy_cls.__name__, symbol=symbol),
+        best_result=best.result
+        or StrategyResult(strategy_name=strategy_cls.__name__, symbol=symbol),
         all_results=sorted(all_results, key=lambda x: x["score"], reverse=True),
         total_combinations=len(all_results),
         method="genetic",

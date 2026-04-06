@@ -6,7 +6,12 @@ from datetime import datetime
 from typing import Optional
 
 from trading_cli.core.order import (
-    Account, Order, OrderSide, OrderStatus, OrderType, Position,
+    Account,
+    Order,
+    OrderSide,
+    OrderStatus,
+    OrderType,
+    Position,
 )
 from trading_cli.core.risk import RiskCheckResult, RiskEngine
 
@@ -131,7 +136,9 @@ class PaperTrader:
             if order.symbol in self.account.positions:
                 pos = self.account.positions[order.symbol]
                 total_qty = pos.quantity + order.quantity
-                pos.avg_cost = (pos.cost_basis + fill_price * order.quantity) / total_qty
+                pos.avg_cost = (
+                    pos.cost_basis + fill_price * order.quantity
+                ) / total_qty
                 pos.quantity = total_qty
                 pos.current_price = exec_price
             else:
@@ -155,10 +162,10 @@ class PaperTrader:
 
             self.account.cash += proceeds
 
-            pos = self.account.positions.get(order.symbol)
-            if pos:
-                pos.quantity -= order.quantity
-                if pos.quantity <= 0:
+            sell_pos = self.account.positions.get(order.symbol)
+            if sell_pos is not None:
+                sell_pos.quantity -= order.quantity
+                if sell_pos.quantity <= 0:
                     del self.account.positions[order.symbol]
 
         self.account.orders.append(order)

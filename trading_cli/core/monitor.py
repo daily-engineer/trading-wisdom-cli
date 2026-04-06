@@ -41,11 +41,18 @@ class AlertRule(BaseModel):
             return False
 
         fired = False
-        if self.condition in (AlertCondition.PRICE_ABOVE, AlertCondition.CHANGE_PCT_ABOVE,
-                              AlertCondition.VOLUME_ABOVE, AlertCondition.RSI_ABOVE):
+        if self.condition in (
+            AlertCondition.PRICE_ABOVE,
+            AlertCondition.CHANGE_PCT_ABOVE,
+            AlertCondition.VOLUME_ABOVE,
+            AlertCondition.RSI_ABOVE,
+        ):
             fired = value > self.threshold
-        elif self.condition in (AlertCondition.PRICE_BELOW, AlertCondition.CHANGE_PCT_BELOW,
-                                AlertCondition.RSI_BELOW):
+        elif self.condition in (
+            AlertCondition.PRICE_BELOW,
+            AlertCondition.CHANGE_PCT_BELOW,
+            AlertCondition.RSI_BELOW,
+        ):
             fired = value < self.threshold
 
         if fired and not self.triggered:
@@ -75,7 +82,11 @@ class AlertManager:
         self._counter = 0
 
     def add_rule(
-        self, symbol: str, condition: AlertCondition, threshold: float, message: str = ""
+        self,
+        symbol: str,
+        condition: AlertCondition,
+        threshold: float,
+        message: str = "",
     ) -> AlertRule:
         self._counter += 1
         rule_id = f"alert-{self._counter:03d}"
@@ -131,7 +142,9 @@ class MarketSnapshot(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
 
     @classmethod
-    def from_dataframe_row(cls, symbol: str, row: pd.Series, prev_close: Optional[float] = None) -> MarketSnapshot:
+    def from_dataframe_row(
+        cls, symbol: str, row: pd.Series, prev_close: Optional[float] = None
+    ) -> MarketSnapshot:
         close = float(row.get("close", 0))
         prev = prev_close or float(row.get("open", close))
         change_pct = ((close - prev) / prev * 100) if prev else 0.0

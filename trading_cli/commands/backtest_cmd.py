@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from typing import Optional
+from typing import Any, Optional
 
 import click
 import pandas as pd
@@ -61,8 +61,12 @@ def backtest():
 @backtest.command()
 @click.argument("strategy_name")
 @click.argument("symbol")
-@click.option("--capital", type=float, default=100000, help="Initial capital (default: 100,000)")
-@click.option("--days", "-d", type=int, default=365, help="Backtest period in days (default: 365)")
+@click.option(
+    "--capital", type=float, default=100000, help="Initial capital (default: 100,000)"
+)
+@click.option(
+    "--days", "-d", type=int, default=365, help="Backtest period in days (default: 365)"
+)
 @click.option("--params", "-p", help="Strategy parameters as JSON string")
 def run(strategy_name: str, symbol: str, capital: float, days: int, params: str | None):
     """Run a strategy backtest.
@@ -107,13 +111,14 @@ def run(strategy_name: str, symbol: str, capital: float, days: int, params: str 
     _save_result(result)
 
 
-def _get_strategy(name: str, params: str = None) -> Optional:
+def _get_strategy(name: str, params: Optional[str] = None) -> Optional[Any]:
     """Get strategy instance by name."""
     if name in BUILTIN_STRATEGIES:
         cls = BUILTIN_STRATEGIES[name]
-        strategy_params = {}
+        strategy_params: dict[str, Any] = {}
         if params:
             import yaml
+
             strategy_params = yaml.safe_load(params) or {}
 
         config = StrategyConfig(
@@ -123,9 +128,9 @@ def _get_strategy(name: str, params: str = None) -> Optional:
         return cls(config, **strategy_params)
 
     reg = get_registry()
-    config = reg.get(name)
-    if config:
-        return type(name, (), {"config": config})()
+    strategy_config = reg.get(name)
+    if strategy_config:
+        return type(name, (), {"config": strategy_config})()
 
     return None
 
@@ -135,7 +140,9 @@ def _display_results(result):
     content = Text()
     content.append("Total P&L: ", style="white")
     color = "green" if result.total_pnl >= 0 else "red"
-    content.append(f"¥{result.total_pnl:+,.2f} ({result.total_pnl_pct:+.2f}%)\n", style=color)
+    content.append(
+        f"¥{result.total_pnl:+,.2f} ({result.total_pnl_pct:+.2f}%)\n", style=color
+    )
 
     content.append("Total Trades: ", style="white")
     content.append(f"{result.total_trades}\n")
@@ -164,7 +171,9 @@ def _display_results(result):
         table.add_column("Value", justify="right", style="green")
         table.add_row("Winning Trades", str(result.winning_trades))
         table.add_row("Losing Trades", str(result.losing_trades))
-        table.add_row("Avg P&L/Trade", f"¥{result.total_pnl / result.total_trades:,.2f}")
+        table.add_row(
+            "Avg P&L/Trade", f"¥{result.total_pnl / result.total_trades:,.2f}"
+        )
         console.print(table)
 
 
@@ -195,8 +204,13 @@ def _save_result(result):
 @click.argument("symbol")
 @click.option("--capital", type=float, default=100000, help="Initial capital")
 @click.option("--days", "-d", type=int, default=365, help="Period in days")
-@click.option("--sort", "-s", type=click.Choice(["pnl", "sharpe", "win_rate", "drawdown"]),
-              default="sharpe", help="Sort metric (default: sharpe)")
+@click.option(
+    "--sort",
+    "-s",
+    type=click.Choice(["pnl", "sharpe", "win_rate", "drawdown"]),
+    default="sharpe",
+    help="Sort metric (default: sharpe)",
+)
 def compare(symbol: str, capital: float, days: int, sort: str):
     """Compare all built-in strategies on a symbol.
 
@@ -215,7 +229,9 @@ def compare(symbol: str, capital: float, days: int, sort: str):
         console.print(f"[red]No data available for {symbol}.[/red]")
         return
 
-    console.print(f"[green]✓[/green] Loaded {len(df)} bars | Period: {days} days | Capital: ¥{capital:,.0f}\n")
+    console.print(
+        f"[green]✓[/green] Loaded {len(df)} bars | Period: {days} days | Capital: ¥{capital:,.0f}\n"
+    )
 
     results = []
     for name, cls in BUILTIN_STRATEGIES.items():
@@ -249,7 +265,9 @@ def compare(symbol: str, capital: float, days: int, sort: str):
         pnl_c = "green" if r.total_pnl >= 0 else "red"
         wr_c = "green" if r.win_rate >= 50 else "yellow"
         dd_c = "green" if abs(r.max_drawdown) < 10 else "red"
-        sh_c = "green" if r.sharpe_ratio > 1 else "yellow" if r.sharpe_ratio > 0 else "red"
+        sh_c = (
+            "green" if r.sharpe_ratio > 1 else "yellow" if r.sharpe_ratio > 0 else "red"
+        )
         rank = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else str(i)
         table.add_row(
             rank,
@@ -270,17 +288,45 @@ def compare(symbol: str, capital: float, days: int, sort: str):
 @backtest.command()
 @click.argument("strategy_name")
 @click.argument("symbol")
-@click.option("--method", "-m", type=click.Choice(["grid", "genetic"]), default="grid",
-              help="Optimisation method (default: grid)")
-@click.option("--metric", type=click.Choice(["sharpe_ratio", "total_pnl", "win_rate", "max_drawdown"]),
-              default="sharpe_ratio", help="Optimisation target (default: sharpe_ratio)")
+@click.option(
+    "--method",
+    "-m",
+    type=click.Choice(["grid", "genetic"]),
+    default="grid",
+    help="Optimisation method (default: grid)",
+)
+@click.option(
+    "--metric",
+    type=click.Choice(["sharpe_ratio", "total_pnl", "win_rate", "max_drawdown"]),
+    default="sharpe_ratio",
+    help="Optimisation target (default: sharpe_ratio)",
+)
 @click.option("--capital", type=float, default=100000, help="Initial capital")
 @click.option("--days", "-d", type=int, default=365, help="Period in days")
-@click.option("--generations", "-g", type=int, default=10, help="Generations for genetic (default: 10)")
-@click.option("--population", type=int, default=20, help="Population for genetic (default: 20)")
-@click.option("--top", "-n", type=int, default=10, help="Show top N results (default: 10)")
-def optimize(strategy_name: str, symbol: str, method: str, metric: str,
-             capital: float, days: int, generations: int, population: int, top: int):
+@click.option(
+    "--generations",
+    "-g",
+    type=int,
+    default=10,
+    help="Generations for genetic (default: 10)",
+)
+@click.option(
+    "--population", type=int, default=20, help="Population for genetic (default: 20)"
+)
+@click.option(
+    "--top", "-n", type=int, default=10, help="Show top N results (default: 10)"
+)
+def optimize(
+    strategy_name: str,
+    symbol: str,
+    method: str,
+    metric: str,
+    capital: float,
+    days: int,
+    generations: int,
+    population: int,
+    top: int,
+):
     """Optimise strategy parameters via grid search or genetic algorithm.
 
     Examples:
@@ -294,29 +340,50 @@ def optimize(strategy_name: str, symbol: str, method: str, metric: str,
     from trading_cli.strategy.optimizer import grid_search, genetic_optimize
 
     if strategy_name not in BUILTIN_STRATEGIES:
-        console.print(f"[red]Strategy '{strategy_name}' not found. Available: {', '.join(BUILTIN_STRATEGIES)}[/red]")
+        console.print(
+            f"[red]Strategy '{strategy_name}' not found. Available: {', '.join(BUILTIN_STRATEGIES)}[/red]"
+        )
         return
 
     cls = BUILTIN_STRATEGIES[strategy_name]
 
     # Define parameter grids per strategy
-    grids = {
-        "ma_cross": {"fast_period": [5, 8, 10, 12, 15, 20], "slow_period": [20, 25, 30, 40, 50, 60]},
-        "rsi": {"period": [7, 10, 14, 21], "oversold": [20, 25, 30, 35], "overbought": [65, 70, 75, 80]},
-        "macd": {"fast": [8, 10, 12, 15], "slow": [20, 24, 26, 30], "signal": [7, 9, 11]},
+    grids: dict[str, dict[str, list[Any]]] = {
+        "ma_cross": {
+            "fast_period": [5, 8, 10, 12, 15, 20],
+            "slow_period": [20, 25, 30, 40, 50, 60],
+        },
+        "rsi": {
+            "period": [7, 10, 14, 21],
+            "oversold": [20, 25, 30, 35],
+            "overbought": [65, 70, 75, 80],
+        },
+        "macd": {
+            "fast": [8, 10, 12, 15],
+            "slow": [20, 24, 26, 30],
+            "signal": [7, 9, 11],
+        },
         "bollinger": {"period": [10, 15, 20, 25, 30], "std_dev": [1.5, 2.0, 2.5, 3.0]},
     }
 
-    ranges = {
+    ranges: dict[str, dict[str, tuple[float, float, float]]] = {
         "ma_cross": {"fast_period": (5, 25, 1), "slow_period": (20, 60, 5)},
-        "rsi": {"period": (5, 25, 1), "oversold": (15, 40, 5), "overbought": (60, 85, 5)},
+        "rsi": {
+            "period": (5, 25, 1),
+            "oversold": (15, 40, 5),
+            "overbought": (60, 85, 5),
+        },
         "macd": {"fast": (6, 18, 2), "slow": (18, 36, 2), "signal": (5, 15, 2)},
         "bollinger": {"period": (10, 40, 5), "std_dev": (1.0, 3.5, 0.5)},
     }
 
     console.print(f"\n[cyan]🔬 Strategy Optimisation[/cyan]")
-    console.print(f"Strategy: [green]{strategy_name}[/green] | Method: [yellow]{method}[/yellow] | Metric: [yellow]{metric}[/yellow]")
-    console.print(f"Symbol: [green]{symbol}[/green] | Period: {days} days | Capital: ¥{capital:,.0f}\n")
+    console.print(
+        f"Strategy: [green]{strategy_name}[/green] | Method: [yellow]{method}[/yellow] | Metric: [yellow]{metric}[/yellow]"
+    )
+    console.print(
+        f"Symbol: [green]{symbol}[/green] | Period: {days} days | Capital: ¥{capital:,.0f}\n"
+    )
 
     with console.status(f"[cyan]Fetching {symbol} data..."):
         df = _fetch_data(symbol, days)
@@ -336,38 +403,59 @@ def optimize(strategy_name: str, symbol: str, method: str, metric: str,
 
         with console.status(f"[cyan]Running grid search ({combos} combos)..."):
             result = grid_search(
-                cls, df, symbol, param_grid,
-                metric=metric, initial_capital=capital,
+                cls,
+                df,
+                symbol,
+                param_grid,
+                metric=metric,
+                initial_capital=capital,
             )
     else:
         param_range = ranges[strategy_name]
-        console.print(f"[dim]Genetic: {population} individuals × {generations} generations[/dim]\n")
+        console.print(
+            f"[dim]Genetic: {population} individuals × {generations} generations[/dim]\n"
+        )
 
         with console.status(f"[cyan]Running genetic optimisation..."):
             result = genetic_optimize(
-                cls, df, symbol, param_range,
-                metric=metric, initial_capital=capital,
-                population_size=population, generations=generations,
+                cls,
+                df,
+                symbol,
+                param_range,
+                metric=metric,
+                initial_capital=capital,
+                population_size=population,
+                generations=generations,
             )
 
     # Display best params
-    console.print(Panel(
-        f"[bold green]Best Parameters[/bold green]\n\n"
-        + "\n".join(f"  {k}: [cyan]{v}[/cyan]" for k, v in result.best_params.items())
-        + f"\n\n[dim]Score ({metric}): {result.best_score:.4f}[/dim]"
-        + f"\n[dim]Total combinations evaluated: {result.total_combinations}[/dim]",
-        title=f"🏆 {method.upper()} Result",
-        border_style="green",
-    ))
+    console.print(
+        Panel(
+            f"[bold green]Best Parameters[/bold green]\n\n"
+            + "\n".join(
+                f"  {k}: [cyan]{v}[/cyan]" for k, v in result.best_params.items()
+            )
+            + f"\n\n[dim]Score ({metric}): {result.best_score:.4f}[/dim]"
+            + f"\n[dim]Total combinations evaluated: {result.total_combinations}[/dim]",
+            title=f"🏆 {method.upper()} Result",
+            border_style="green",
+        )
+    )
 
     # Best result details
     br = result.best_result
-    console.print(f"\n  P&L: [{'green' if br.total_pnl >= 0 else 'red'}]¥{br.total_pnl:+,.2f} ({br.total_pnl_pct:+.2f}%)[/]")
-    console.print(f"  Trades: {br.total_trades} | Win Rate: {br.win_rate:.1f}% | Drawdown: {br.max_drawdown:.1f}% | Sharpe: {br.sharpe_ratio:.2f}")
+    console.print(
+        f"\n  P&L: [{'green' if br.total_pnl >= 0 else 'red'}]¥{br.total_pnl:+,.2f} ({br.total_pnl_pct:+.2f}%)[/]"
+    )
+    console.print(
+        f"  Trades: {br.total_trades} | Win Rate: {br.win_rate:.1f}% | Drawdown: {br.max_drawdown:.1f}% | Sharpe: {br.sharpe_ratio:.2f}"
+    )
 
     # Top N results table
     if result.all_results:
-        console.print(f"\n[cyan]Top {min(top, len(result.all_results))} Results:[/cyan]")
+        console.print(
+            f"\n[cyan]Top {min(top, len(result.all_results))} Results:[/cyan]"
+        )
         table = Table(show_lines=False)
         table.add_column("#", style="dim", width=3)
 
@@ -414,7 +502,9 @@ def history():
         console.print("[yellow]No backtest history found.[/yellow]")
         return
 
-    files = sorted(results_dir.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True)
+    files = sorted(
+        results_dir.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True
+    )
 
     if not files:
         console.print("[yellow]No backtest results saved.[/yellow]")
@@ -437,7 +527,10 @@ def history():
         date_str = f"{parts[-2]}_{parts[-1]}" if len(parts) >= 3 else path.stem
         try:
             from datetime import datetime
-            date_str = datetime.strptime(date_str, "%Y%m%d_%H%M%S").strftime("%Y-%m-%d %H:%M")
+
+            date_str = datetime.strptime(date_str, "%Y%m%d_%H%M%S").strftime(
+                "%Y-%m-%d %H:%M"
+            )
         except Exception:
             pass
 
