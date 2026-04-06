@@ -34,9 +34,13 @@ AI-powered trading CLI framework supporting A-shares (CN), Hong Kong stocks (HK)
 - Multi-market: CN/HK/US metadata, sessions, FX rates — `trading_cli/core/market.py`
 - Market commands: info, fx, compare — `trading_cli/commands/market_cmd.py`
 
-### Phase 5: Live Trading (Week 13-14) — NEXT
-- Account management, live execution (vnpy/veighna)
-- Security audit, emergency stop-loss, full integration tests
+### Phase 5: Live Trading ✅ (Week 13-14)
+- `BaseTrader` ABC — `trading_cli/core/base_trader.py`
+- `RealTrader` (IBKR via ib_insync, lazy connect) — `trading_cli/core/live_trader.py`
+- `TradeLogger` (JSON Lines, account_id truncated to last-4) — `trading_cli/core/trade_logger.py`
+- `--live` / `--yes` flags on all trade commands; emergency stop group
+- 20 unit tests for live trader + security audit passed
+- Install with live trading: `pip install trading-wisdom-cli[ib]`
 
 ### Phase 6: Release (Week 15-16)
 - Performance tuning, Docker, v1.0
@@ -44,9 +48,9 @@ AI-powered trading CLI framework supporting A-shares (CN), Hong Kong stocks (HK)
 ---
 
 ## Current Stats
-- **161 tests**, all passing (`python -m pytest tests/ -q`)
+- **181 tests**, all passing (`python -m pytest tests/ -q`)
 - **12 command groups**, 30+ CLI subcommands
-- **36 source files**, black + mypy clean
+- **39 source files**, black + mypy clean
 
 ## Code Quality
 - Formatter: `black` (run: `python -m black trading_cli/`)
