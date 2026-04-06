@@ -43,7 +43,8 @@ class TestMovingAverages:
     def test_sma(self, sample_data):
         """Test SMA calculation."""
         sma_20 = TechnicalIndicators.sma(sample_data['close'], 20)
-        assert not sma_20.iloc[-1] != sample_data['close'].iloc[-20:].mean()
+        import pytest
+        assert sma_20.iloc[-1] == pytest.approx(sample_data['close'].iloc[-20:].mean())
     
     def test_ema(self, sample_data):
         """Test EMA calculation."""
