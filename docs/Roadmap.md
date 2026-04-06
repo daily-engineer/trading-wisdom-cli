@@ -41,14 +41,29 @@
 
 **统计**: 99 tests | 6000+ 行代码 | 10 命令组 | 30+ CLI 子命令
 
-### Phase 3: 期权支持 (Week 8-10)
+### Phase 3: 期权支持 (Week 8-10) ✅ 完成
 **目标**: 完整的期权交易支持
 
-- Week 8: 期权数据和Greeks计算
-- Week 9: 期权分析和策略
-- Week 10: 期权风控和对冲
+- Week 8: 期权定价引擎 ✅
+  - [x] Black-Scholes 定价模型
+  - [x] 完整 Greeks (Delta/Gamma/Theta/Vega/Rho)
+  - [x] 隐含波动率计算 (Newton-Raphson)
+  - [x] 期权链模型 + 合成链生成器
 
-**可交付物**: 期权链分析、价差交易、Greeks监控
+- Week 9: 期权分析命令 ✅
+  - [x] `options chain` — 期权链展示（含Greeks）
+  - [x] `options greeks` — 单合约 Greeks 计算
+  - [x] `options iv` — 隐含波动率反算
+  - [x] `options payoff` — 到期损益分析
+
+- Week 10: 期权策略 + 回测 ✅
+  - [x] 6 种策略：Covered Call / Protective Put / Bull Call Spread / Bear Put Spread / Iron Condor / Straddle
+  - [x] 策略损益分析（break-even, max profit/loss, risk-reward）
+  - [x] 期权策略回测（时间衰减 + mark-to-market）
+
+**可交付物**: 期权链分析、价差交易、Greeks监控、策略损益模拟 ✅
+
+**统计**: 136 tests | 11 命令组 | 37 期权测试（含 put-call parity 验证）
 
 ### Phase 4: 国际市场 (Week 11-12)
 **目标**: 港股和美股支持

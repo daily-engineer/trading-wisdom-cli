@@ -17,6 +17,7 @@ from trading_cli.commands.report_cmd import report
 from trading_cli.commands.trade_cmd import trade
 from trading_cli.commands.workflow_cmd import workflow
 from trading_cli.commands.debug_cmd import debug
+from trading_cli.commands.options_cmd import options
 
 
 @click.group()
@@ -45,7 +46,7 @@ def cli(ctx):
     ctx.ensure_object(dict)
 
 
-# All 9 command groups — Phase 2 complete
+# All command groups — Phase 2 + Phase 3 (options)
 cli.add_command(data)
 cli.add_command(config)
 cli.add_command(analyze)
@@ -56,6 +57,7 @@ cli.add_command(report)
 cli.add_command(trade)
 cli.add_command(workflow)
 cli.add_command(debug)
+cli.add_command(options)
 
 
 if __name__ == "__main__":
