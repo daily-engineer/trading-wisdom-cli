@@ -19,6 +19,7 @@ from trading_cli.commands.workflow_cmd import workflow
 from trading_cli.commands.debug_cmd import debug
 from trading_cli.commands.options_cmd import options
 from trading_cli.commands.market_cmd import market
+from trading_cli.commands.rps_cmd import rps
 
 
 @click.group()
@@ -60,6 +61,7 @@ cli.add_command(workflow)
 cli.add_command(debug)
 cli.add_command(options)
 cli.add_command(market)
+cli.add_command(rps)
 
 
 if __name__ == "__main__":
