@@ -20,6 +20,7 @@ from trading_cli.commands.debug_cmd import debug
 from trading_cli.commands.options_cmd import options
 from trading_cli.commands.market_cmd import market
 from trading_cli.commands.rps_cmd import rps
+from trading_cli.commands.capital_flow_cmd import capital_flow
 
 
 @click.group()
@@ -62,6 +63,7 @@ cli.add_command(debug)
 cli.add_command(options)
 cli.add_command(market)
 cli.add_command(rps)
+cli.add_command(capital_flow)
 
 
 if __name__ == "__main__":
