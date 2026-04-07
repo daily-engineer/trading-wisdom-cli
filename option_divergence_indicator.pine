@@ -1,0 +1,31 @@
+
+//@version=5
+indicator("Sasa Option Divergence Indicator", overlay=false)
+
+// 这里展示的是逻辑代码，实际运行时 TradingView 会自动计算
+// 我们可以在 Pine Script 中计算 ETF 和 期权的相关性
+// 注意：在 TV 中，你需要把期权数据作为第二个 Symbol 引入 (通过 request.security)
+
+etf_price = close // 假设当前图表是 ETF
+opt_symbol = input.symbol("OPTION_SYMBOL", "期权合约代码或相关 ETF")
+opt_price = request.security(opt_symbol, timeframe.period, close)
+
+// 计算变动率
+etf_chg = ta.change(etf_price)
+opt_chg = ta.change(opt_price)
+
+// 滚动相关性 (5 周期)
+corr_val = ta.correlation(etf_chg, opt_chg, 5)
+
+// 画图
+plot(corr_val, color=color.yellow, linewidth=2, title="ETF-Opt 5 日相关性")
+hline(0, "背离基准线", color=color.red, linestyle=hline.style_dotted)
+hline(0.8, "强相关区", color=color.green, linestyle=hline.style_dashed)
+hline(-0.8, "弱相关区", color=color.green, linestyle=hline.style_dashed)
+
+// 信号背景色
+bgcolor(corr_val < 0 ? color.new(color.red, 90) : color.new(color.blue, 95))
+
+// 提示标签
+if corr_val < 0
+    label.new(bar_index, corr_val, "背离!", style=label.style_label_up, color=color.new(color.red, 30), textcolor=color.white)

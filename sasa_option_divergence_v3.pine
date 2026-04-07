@@ -1,0 +1,34 @@
+//@version=5
+// Sasa 期权背离指标 - 由 trading-wisdom-cli 自动生成
+// 标的: 50ETF (510050) | 期权: 510050C2604M02900
+
+indicator("Sasa 期权背离指标 v3", overlay=false, format=format.price)
+
+// 标的 ETF 收盘价 (从外部数据源或通过当前图表)
+etf_close = close
+
+// 期权数据: 手动在 TV 中选择相关 ETF 期权对应的代码
+opt_symbol = input.symbol("", "期权合约/ETF 代理符号")
+opt_close = request.security(opt_symbol, timeframe.period, close)
+
+// 变动率
+etf_chg = ta.change(etf_close)
+opt_chg = ta.change(opt_close)
+
+// 5日滚动相关性
+corr = ta.correlation(etf_chg, opt_chg, 5)
+
+// 绘图
+plot(corr, "5日相关性", color.new(color.yellow, 0), 2)
+hline(0, "背离零线", color.red, hline.style_dotted)
+hline(0.8, "强相关", color.green, hline.style_dashed)
+hline(-0.3, "强背离", color.red, hline.style_dashed)
+
+// 信号
+bull = etf_chg < -0.005 and opt_chg > 0.015
+bear = etf_chg > 0.005 and opt_chg < -0.015
+
+plotshape(bull, "🟢抄底", shape.triangleup, location.absolute, color.green, text="买入")
+plotshape(bear, "🔴诱多", shape.triangledown, location.absolute, color.red, text="卖出")
+
+bgcolor(corr < 0 ? color.new(color.red, 90) : na)
