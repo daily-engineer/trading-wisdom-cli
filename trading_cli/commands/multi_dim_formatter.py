@@ -347,11 +347,11 @@ def _scan_mode(filter_expr: str, top_n: int):
     # Parse filter
     industry_name = None
     if "=" in filter_expr:
-        key, val = filter_expr.split("=", 1)
+        key, filter_val = filter_expr.split("=", 1)
         if key.strip().lower() == "industry":
-            industry_name = val.strip()
+            industry_name = filter_val.strip()
     
-    stock_list = INDUSTRY_MAPS.get(industry_name)
+    stock_list = INDUSTRY_MAPS.get(industry_name) if industry_name else None
     if not stock_list:
         console.print(f"[red]❌ 未知行业: {filter_expr}[/red]")
         console.print(f"[dim]支持的行业: {', '.join(INDUSTRY_MAPS.keys())}[/dim]")
