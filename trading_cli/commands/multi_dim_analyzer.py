@@ -27,6 +27,7 @@ from rich.text import Text
 from rich.box import ROUNDED
 
 import warnings
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 console = Console()
@@ -36,9 +37,11 @@ console = Console()
 # BaoStock helpers
 # ──────────────────────────────────────────────
 
+
 def _bs_login():
     """Lazy import + login."""
     import baostock as bs
+
     bs.login()
     return bs
 
@@ -99,25 +102,32 @@ def _safe_float(val) -> Optional[float]:
 # Dimension 1: Valuation
 # ──────────────────────────────────────────────
 
+
 def _analyze_valuation(bs, a_code: str, days: int = 180) -> dict:
     """PE/PB/PS/PCF + historical percentile."""
     from datetime import datetime, timedelta
+
     end = datetime.now().strftime("%Y-%m-%d")
     start = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
 
-    df = _bs_query(bs, "query_history_k_data_plus",
+    df = _bs_query(
+        bs,
+        "query_history_k_data_plus",
         code=a_code,
         fields="date,close,peTTM,pbMRQ,psTTM,pcfNcfTTM",
-        start_date=start, end_date=end, frequency="d")
+        start_date=start,
+        end_date=end,
+        frequency="d",
+    )
 
     if df is None or df.empty:
         return {"error": "No valuation data"}
 
-    for c in ['close', 'peTTM', 'pbMRQ', 'psTTM', 'pcfNcfTTM']:
-        df[c] = pd.to_numeric(df[c], errors='coerce')
+    for c in ["close", "peTTM", "pbMRQ", "psTTM", "pcfNcfTTM"]:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
 
     result = {}
-    for metric in ['peTTM', 'pbMRQ', 'psTTM', 'pcfNcfTTM']:
+    for metric in ["peTTM", "pbMRQ", "psTTM", "pcfNcfTTM"]:
         series = df[metric].dropna()
         if series.empty:
             result[metric] = None
@@ -138,6 +148,7 @@ def _analyze_valuation(bs, a_code: str, days: int = 180) -> dict:
 # Dimension 2: Fundamentals
 # ──────────────────────────────────────────────
 
+
 def _analyze_fundamentals(bs, a_code: str) -> dict:
     """ROE, growth, cash flow quality."""
     result = {}
@@ -146,12 +157,12 @@ def _analyze_fundamentals(bs, a_code: str) -> dict:
     for year in [2024, 2023, 2022]:
         for q in [4, 3, 2, 1]:
             # Profitability
-            df = _bs_query(bs, "query_profit_data",
-                code=a_code, year=year, quarter=q)
+            df = _bs_query(bs, "query_profit_data", code=a_code, year=year, quarter=q)
             if df is not None and not df.empty:
                 r = df.iloc[0]
                 result["profit"] = {
-                    "year": year, "quarter": q,
+                    "year": year,
+                    "quarter": q,
                     "statDate": r.get("statDate", ""),
                     "roeAvg": _safe_float(r.get("roeAvg")),
                     "npMargin": _safe_float(r.get("npMargin")),
@@ -165,8 +176,7 @@ def _analyze_fundamentals(bs, a_code: str) -> dict:
     # Growth (same year)
     if "profit" in result:
         y, q = result["profit"]["year"], result["profit"]["quarter"]
-        df = _bs_query(bs, "query_growth_data",
-            code=a_code, year=y, quarter=q)
+        df = _bs_query(bs, "query_growth_data", code=a_code, year=y, quarter=q)
         if df is not None and not df.empty:
             r = df.iloc[0]
             result["growth"] = {
@@ -177,8 +187,7 @@ def _analyze_fundamentals(bs, a_code: str) -> dict:
             }
 
         # Balance / cash flow
-        df = _bs_query(bs, "query_balance_data",
-            code=a_code, year=y, quarter=q)
+        df = _bs_query(bs, "query_balance_data", code=a_code, year=y, quarter=q)
         if df is not None and not df.empty:
             r = df.iloc[0]
             result["balance"] = {
@@ -186,8 +195,7 @@ def _analyze_fundamentals(bs, a_code: str) -> dict:
                 "assetToEquity": _safe_float(r.get("assetToEquity")),
             }
 
-        df = _bs_query(bs, "query_cash_flow_data",
-            code=a_code, year=y, quarter=q)
+        df = _bs_query(bs, "query_cash_flow_data", code=a_code, year=y, quarter=q)
         if df is not None and not df.empty:
             r = df.iloc[0]
             result["cashflow"] = {
@@ -202,22 +210,29 @@ def _analyze_fundamentals(bs, a_code: str) -> dict:
 # Dimension 3: Technicals
 # ──────────────────────────────────────────────
 
+
 def _analyze_technicals(bs, a_code: str, days: int = 60) -> dict:
     """MA trend + momentum."""
     from datetime import datetime, timedelta
+
     end = datetime.now().strftime("%Y-%m-%d")
     start = (datetime.now() - timedelta(days=days * 2)).strftime("%Y-%m-%d")
 
-    df = _bs_query(bs, "query_history_k_data_plus",
+    df = _bs_query(
+        bs,
+        "query_history_k_data_plus",
         code=a_code,
         fields="date,open,high,low,close,volume,pctChg",
-        start_date=start, end_date=end, frequency="d")
+        start_date=start,
+        end_date=end,
+        frequency="d",
+    )
 
     if df is None or df.empty:
         return {"error": "No price data"}
 
-    df["close"] = pd.to_numeric(df["close"], errors='coerce')
-    df["volume"] = pd.to_numeric(df["volume"], errors='coerce').fillna(0)
+    df["close"] = pd.to_numeric(df["close"], errors="coerce")
+    df["volume"] = pd.to_numeric(df["volume"], errors="coerce").fillna(0)
 
     for period in [5, 10, 20, 60]:
         df[f"ma{period}"] = df["close"].rolling(period).mean()
@@ -240,20 +255,32 @@ def _analyze_technicals(bs, a_code: str, days: int = 60) -> dict:
         above["ma60"] = close > ma60
 
     # Momentum
-    change_5d = (close / float(df.iloc[-5]["close"]) - 1) * 100 if len(df) >= 5 else None
-    change_20d = (close / float(df.iloc[-20]["close"]) - 1) * 100 if len(df) >= 20 else None
+    change_5d = (
+        (close / float(df.iloc[-5]["close"]) - 1) * 100 if len(df) >= 5 else None
+    )
+    change_20d = (
+        (close / float(df.iloc[-20]["close"]) - 1) * 100 if len(df) >= 20 else None
+    )
 
     # Volume trend
     vol_avg_5 = df["volume"].tail(5).mean()
     vol_avg_20 = df["volume"].tail(20).mean()
-    vol_trend = "放量" if vol_avg_5 > vol_avg_20 * 1.2 else ("缩量" if vol_avg_5 < vol_avg_20 * 0.8 else "平量")
+    vol_trend = (
+        "放量"
+        if vol_avg_5 > vol_avg_20 * 1.2
+        else ("缩量" if vol_avg_5 < vol_avg_20 * 0.8 else "平量")
+    )
 
     return {
         "close": round(close, 2),
-        "ma5": round(ma5, 2), "above_ma5": above["ma5"],
-        "ma10": round(ma10, 2), "above_ma10": above["ma10"],
-        "ma20": round(ma20, 2), "above_ma20": above["ma20"],
-        "ma60": round(ma60, 2) if ma60 else None, "above_ma60": above.get("ma60"),
+        "ma5": round(ma5, 2),
+        "above_ma5": above["ma5"],
+        "ma10": round(ma10, 2),
+        "above_ma10": above["ma10"],
+        "ma20": round(ma20, 2),
+        "above_ma20": above["ma20"],
+        "ma60": round(ma60, 2) if ma60 else None,
+        "above_ma60": above.get("ma60"),
         "change_5d": round(change_5d, 2) if change_5d else None,
         "change_20d": round(change_20d, 2) if change_20d else None,
         "vol_trend": vol_trend,
@@ -264,39 +291,54 @@ def _analyze_technicals(bs, a_code: str, days: int = 60) -> dict:
 # Dimension 4: Peer Comparison
 # ──────────────────────────────────────────────
 
+
 def _analyze_peer_comparison(bs, a_code: str, peer_codes: list = None) -> list:
     """Compare PE/PB/PS/PCF with peers."""
     from datetime import datetime, timedelta
+
     end = datetime.now().strftime("%Y-%m-%d")
     start = (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d")
 
-    codes = peer_codes or ["sh.600036", "sh.601166", "sh.600919", "sh.601398", "sh.601288"]
+    codes = peer_codes or [
+        "sh.600036",
+        "sh.601166",
+        "sh.600919",
+        "sh.601398",
+        "sh.601288",
+    ]
     # Always include target
     if a_code not in codes:
         codes.insert(0, a_code)
 
     results = []
     for code in codes:
-        df = _bs_query(bs, "query_history_k_data_plus",
+        df = _bs_query(
+            bs,
+            "query_history_k_data_plus",
             code=code,
             fields="date,close,peTTM,pbMRQ,psTTM,pcfNcfTTM",
-            start_date=start, end_date=end, frequency="d")
+            start_date=start,
+            end_date=end,
+            frequency="d",
+        )
         if df is None or df.empty:
             continue
 
-        for c in ['close', 'peTTM', 'pbMRQ', 'psTTM', 'pcfNcfTTM']:
-            df[c] = pd.to_numeric(df[c], errors='coerce')
+        for c in ["close", "peTTM", "pbMRQ", "psTTM", "pcfNcfTTM"]:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
 
         last = df.iloc[-1]
-        results.append({
-            "code": code,
-            "display": _aotcn2code(code),
-            "close": round(last["close"], 2) if pd.notna(last["close"]) else None,
-            "pe": _safe_float(last.get("peTTM")),
-            "pb": _safe_float(last.get("pbMRQ")),
-            "ps": _safe_float(last.get("psTTM")),
-            "pcf": _safe_float(last.get("pcfNcfTTM")),
-        })
+        results.append(
+            {
+                "code": code,
+                "display": _aotcn2code(code),
+                "close": round(last["close"], 2) if pd.notna(last["close"]) else None,
+                "pe": _safe_float(last.get("peTTM")),
+                "pb": _safe_float(last.get("pbMRQ")),
+                "ps": _safe_float(last.get("psTTM")),
+                "pcf": _safe_float(last.get("pcfNcfTTM")),
+            }
+        )
 
     return results
 
@@ -304,6 +346,7 @@ def _analyze_peer_comparison(bs, a_code: str, peer_codes: list = None) -> list:
 # ──────────────────────────────────────────────
 # Scoring Engine
 # ──────────────────────────────────────────────
+
 
 def _compute_scores(valuation: dict, fundamentals: dict, technicals: dict) -> dict:
     """5-dimension scoring engine."""
@@ -313,57 +356,84 @@ def _compute_scores(valuation: dict, fundamentals: dict, technicals: dict) -> di
     pe_info = valuation.get("peTTM")
     if pe_info:
         pct = pe_info["percentile"]
-        if pct < 15: scores["估值"] = 5
-        elif pct < 35: scores["估值"] = 4
-        elif pct < 65: scores["估值"] = 3
-        elif pct < 85: scores["估值"] = 2
-        else: scores["估值"] = 1
+        if pct < 15:
+            scores["估值"] = 5
+        elif pct < 35:
+            scores["估值"] = 4
+        elif pct < 65:
+            scores["估值"] = 3
+        elif pct < 85:
+            scores["估值"] = 2
+        else:
+            scores["估值"] = 1
     else:
         scores["估值"] = 0
 
     # 2. Profitability score (ROE based)
     roe = fundamentals.get("profit", {}).get("roeAvg")
     if roe is not None:
-        if roe > 0.15: scores["盈利能力"] = 5
-        elif roe > 0.10: scores["盈利能力"] = 4
-        elif roe > 0.07: scores["盈利能力"] = 3
-        elif roe > 0.04: scores["盈利能力"] = 2
-        else: scores["盈利能力"] = 1
+        if roe > 0.15:
+            scores["盈利能力"] = 5
+        elif roe > 0.10:
+            scores["盈利能力"] = 4
+        elif roe > 0.07:
+            scores["盈利能力"] = 3
+        elif roe > 0.04:
+            scores["盈利能力"] = 2
+        else:
+            scores["盈利能力"] = 1
     else:
         scores["盈利能力"] = 0
 
     # 3. Growth score
     yoy_ni = fundamentals.get("growth", {}).get("yoyNI")
     if yoy_ni is not None:
-        if yoy_ni > 0.30: scores["成长性"] = 5
-        elif yoy_ni > 0.15: scores["成长性"] = 4
-        elif yoy_ni > 0.05: scores["成长性"] = 3
-        elif yoy_ni > 0: scores["成长性"] = 2
-        else: scores["成长性"] = 1
+        if yoy_ni > 0.30:
+            scores["成长性"] = 5
+        elif yoy_ni > 0.15:
+            scores["成长性"] = 4
+        elif yoy_ni > 0.05:
+            scores["成长性"] = 3
+        elif yoy_ni > 0:
+            scores["成长性"] = 2
+        else:
+            scores["成长性"] = 1
     else:
         scores["成长性"] = 0
 
     # 4. Technical score
-    above_ma_count = sum([
-        technicals.get("above_ma5", False),
-        technicals.get("above_ma10", False),
-        technicals.get("above_ma20", False),
-        technicals.get("above_ma60", False) or False,
-    ])
-    if above_ma_count >= 4: scores["技术面"] = 5
-    elif above_ma_count >= 3: scores["技术面"] = 4
-    elif above_ma_count >= 2: scores["技术面"] = 3
-    elif above_ma_count >= 1: scores["技术面"] = 2
-    else: scores["技术面"] = 1
+    above_ma_count = sum(
+        [
+            technicals.get("above_ma5", False),
+            technicals.get("above_ma10", False),
+            technicals.get("above_ma20", False),
+            technicals.get("above_ma60", False) or False,
+        ]
+    )
+    if above_ma_count >= 4:
+        scores["技术面"] = 5
+    elif above_ma_count >= 3:
+        scores["技术面"] = 4
+    elif above_ma_count >= 2:
+        scores["技术面"] = 3
+    elif above_ma_count >= 1:
+        scores["技术面"] = 2
+    else:
+        scores["技术面"] = 1
 
     # 5. Cash flow quality
     cfo_np = fundamentals.get("cashflow", {}).get("cfoToNP")
     if cfo_np is not None:
-        if cfo_np > 2.0: scores["现金质量"] = 5
-        elif cfo_np > 1.0: scores["现金质量"] = 4
-        elif cfo_np > 0.5: scores["现金质量"] = 3
-        elif cfo_np > 0: scores["现金质量"] = 2
-        else: scores["现金质量"] = 1
+        if cfo_np > 2.0:
+            scores["现金质量"] = 5
+        elif cfo_np > 1.0:
+            scores["现金质量"] = 4
+        elif cfo_np > 0.5:
+            scores["现金质量"] = 3
+        elif cfo_np > 0:
+            scores["现金质量"] = 2
+        else:
+            scores["现金质量"] = 1
     else:
         scores["现金质量"] = 0
 
@@ -374,12 +444,16 @@ def _compute_scores(valuation: dict, fundamentals: dict, technicals: dict) -> di
 # Formatting Helpers
 # ──────────────────────────────────────────────
 
+
 def _stars(score: int, max_score: int = 5) -> str:
     return "⭐" * score + "☆" * (max_score - score)
 
 
 def _score_color(score: int) -> str:
-    if score >= 4: return "green"
-    if score >= 3: return "yellow"
-    if score >= 2: return "orange3"
+    if score >= 4:
+        return "green"
+    if score >= 3:
+        return "yellow"
+    if score >= 2:
+        return "orange3"
     return "red"
