@@ -116,7 +116,7 @@ def _analyze_valuation(bs, a_code: str, days: int = 180) -> dict:
     for c in ['close', 'peTTM', 'pbMRQ', 'psTTM', 'pcfNcfTTM']:
         df[c] = pd.to_numeric(df[c], errors='coerce')
 
-    result = {}
+    result: dict = {}
     for metric in ['peTTM', 'pbMRQ', 'psTTM', 'pcfNcfTTM']:
         series = df[metric].dropna()
         if series.empty:
@@ -264,7 +264,7 @@ def _analyze_technicals(bs, a_code: str, days: int = 60) -> dict:
 # Dimension 4: Peer Comparison
 # ──────────────────────────────────────────────
 
-def _analyze_peer_comparison(bs, a_code: str, peer_codes: list = None) -> list:
+def _analyze_peer_comparison(bs, a_code: str, peer_codes: Optional[list] = None) -> list:
     """Compare PE/PB/PS/PCF with peers."""
     from datetime import datetime, timedelta
     end = datetime.now().strftime("%Y-%m-%d")
