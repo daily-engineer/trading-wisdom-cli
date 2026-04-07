@@ -22,6 +22,7 @@ from trading_cli.commands.market_cmd import market
 from trading_cli.commands.rps_cmd import rps
 from trading_cli.commands.capital_flow_cmd import capital_flow
 from trading_cli.commands.sentiment_cmd import sentiment
+from trading_cli.commands.review_cmd import review
 
 
 @click.group()
@@ -66,6 +67,7 @@ cli.add_command(market)
 cli.add_command(rps)
 cli.add_command(capital_flow)
 cli.add_command(sentiment)
+cli.add_command(review)
 
 
 if __name__ == "__main__":
